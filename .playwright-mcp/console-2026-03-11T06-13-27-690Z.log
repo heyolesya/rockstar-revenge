@@ -1,0 +1,30 @@
+[  119344ms] TypeError: Cannot read properties of undefined (reading 'setVelocityX')
+    at Level3Scene.update (http://localhost:8080/js/scenes/Level3Scene.js:892:24)
+    at initialize.step (https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js:1:978114)
+    at initialize.update (https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js:1:965335)
+    at initialize.step (https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js:1:76015)
+    at initialize.step (https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js:1:80314)
+    at e (https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js:1:141083)
+[  206370ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  206800ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  207227ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  207655ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  208084ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  208512ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  208940ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  209369ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  209795ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  210223ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  210652ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  211080ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  211508ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  211937ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  212363ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  213220ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  213647ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  214076ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  214504ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  214932ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  215359ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  215788ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
+[  216216ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8080/js/utils/AudioManager.js:303
