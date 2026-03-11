@@ -20,10 +20,12 @@ var config = {
   scene: [
     BootScene,
     TitleScene,
+    TutorialScene,
     Level1Scene,
     Level2Scene,
     Level3Scene,
     CutsceneScene,
+    PauseScene,
     WinScene,
     LoseScene,
     GameOverScene

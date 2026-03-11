@@ -121,12 +121,22 @@ class Level2Scene extends Phaser.Scene {
     // ------------------------------------------------------------------
     // Controls & Music
     // ------------------------------------------------------------------
+    // Notes display (persistent from Level 1)
+    var totalNotes = this.registry.get('notesCollected') || 0;
+    this.notesDisplay = this.add.text(10, 258, '\u266A ' + totalNotes, {
+      fontSize: '8px', fontFamily: 'monospace', color: '#9966ff'
+    }).setScrollFactor(0).setDepth(100);
+
     this.controls = new Controls(this);
     this.controls.setupForLevel(2);
 
     if (window.audioManager) {
       window.audioManager.playLevel2Music();
     }
+
+    // Pause keys
+    this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
   }
 
   // ====================================================================
@@ -374,6 +384,12 @@ class Level2Scene extends Phaser.Scene {
   // UPDATE
   // ====================================================================
   update(time, delta) {
+    if (Phaser.Input.Keyboard.JustDown(this.pauseKey) || Phaser.Input.Keyboard.JustDown(this.pKey)) {
+      this.scene.pause();
+      this.scene.launch('PauseScene', { pausedScene: 'Level2Scene' });
+      return;
+    }
+
     // Move crosshair to follow pointer
     if (!this.levelDone) {
       var pointer = this.input.activePointer;

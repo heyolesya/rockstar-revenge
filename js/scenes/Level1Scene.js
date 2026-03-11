@@ -30,21 +30,54 @@ class Level1Scene extends Phaser.Scene {
     this.invulnerable = false;
 
     // ------------------------------------------------------------------
-    // Background
+    // Background (depth 0)
     // ------------------------------------------------------------------
-    this.add.sprite(240, 135, 'bg-stage').setOrigin(0.5);
+    this.add.sprite(240, 135, 'bg-stage').setOrigin(0.5).setDepth(0);
 
-    // Simple parallax stage lights — coloured transparent rectangles that sway
-    var lightColors = [0xff0066, 0x00ccff, 0xffcc00, 0xff00ff];
-    for (var i = 0; i < 4; i++) {
-      var lx = 60 + i * 120;
-      var light = this.add.rectangle(lx, -5, 60, 30, lightColors[i], 0.18);
-      light.setOrigin(0.5, 0);
+    // ------------------------------------------------------------------
+    // Band members playing BEHIND the player (depth 2-3)
+    // ------------------------------------------------------------------
+    this.bassist = this.add.sprite(80, 205, 'band-bassist-1').setDepth(3);
+    this.guitarist = this.add.sprite(400, 205, 'band-guitarist-1').setDepth(3);
+    this.drummer = this.add.sprite(240, 190, 'band-drummer-1').setDepth(2);
+
+    // Band animation — rock back and forth
+    var self = this;
+    this.time.addEvent({
+      delay: 400,
+      loop: true,
+      callback: function () {
+        if (self.gameOver) return;
+        var frame = (Date.now() % 800 < 400) ? '1' : '2';
+        self.bassist.setTexture('band-bassist-' + frame);
+        self.guitarist.setTexture('band-guitarist-' + frame);
+        self.drummer.setTexture('band-drummer-' + frame);
+      }
+    });
+
+    // ------------------------------------------------------------------
+    // Stage lighting — spotlight beams from top (depth 4)
+    // ------------------------------------------------------------------
+    var spotlightColors = [0xff0066, 0x00ccff, 0xffcc00, 0xff00ff, 0x66ff66];
+    this.spotlights = [];
+    for (var s = 0; s < 5; s++) {
+      var sx = 48 + s * 96;
+      // Triangular spotlight beams
+      var beam = this.add.triangle(
+        sx, 0,
+        0, 0,
+        30, 0,
+        15 + Phaser.Math.Between(-20, 20), 180,
+        spotlightColors[s], 0.12
+      ).setOrigin(0.5, 0).setDepth(4);
+      this.spotlights.push(beam);
+
+      // Sway the spotlight beams gently
       this.tweens.add({
-        targets: light,
-        x: lx + Phaser.Math.Between(-40, 40),
-        alpha: { from: 0.12, to: 0.28 },
-        duration: 2000 + i * 400,
+        targets: beam,
+        x: sx + Phaser.Math.Between(-50, 50),
+        alpha: { from: 0.08, to: 0.2 },
+        duration: 2500 + s * 500,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut'
@@ -52,7 +85,52 @@ class Level1Scene extends Phaser.Scene {
     }
 
     // ------------------------------------------------------------------
-    // Player
+    // Fog/smoke at the base of the stage (depth 5)
+    // ------------------------------------------------------------------
+    for (var f = 0; f < 6; f++) {
+      var fogX = Phaser.Math.Between(20, 460);
+      var fogW = Phaser.Math.Between(60, 140);
+      var fog = this.add.rectangle(fogX, 230 + Phaser.Math.Between(-5, 5), fogW, 12, 0xcccccc, 0.08)
+        .setDepth(5);
+      this.tweens.add({
+        targets: fog,
+        alpha: { from: 0.04, to: 0.15 },
+        x: fogX + Phaser.Math.Between(-30, 30),
+        scaleX: { from: 0.8, to: 1.3 },
+        duration: 2000 + f * 400,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // Fire/pyro columns on the sides (depth 5)
+    // ------------------------------------------------------------------
+    var pyroPositions = [15, 465];
+    this.pyros = [];
+    for (var p = 0; p < pyroPositions.length; p++) {
+      var pyroX = pyroPositions[p];
+      for (var py = 0; py < 4; py++) {
+        var pyroColors = [0xff6600, 0xffaa00, 0xffdd00, 0xffffaa];
+        var pyro = this.add.rectangle(pyroX, 220 - py * 12, 10 - py * 2, 14, pyroColors[py], 0.6 - py * 0.1)
+          .setDepth(5);
+        this.pyros.push(pyro);
+        this.tweens.add({
+          targets: pyro,
+          scaleY: { from: 0.6, to: 1.4 },
+          alpha: { from: 0.3, to: 0.7 },
+          duration: 150 + py * 80,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+          delay: py * 50
+        });
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Player (depth 10 — between band and fans)
     // ------------------------------------------------------------------
     this.player = this.physics.add.sprite(240, 230, 'rockstar-idle');
     this.player.setCollideWorldBounds(true);
@@ -61,6 +139,37 @@ class Level1Scene extends Phaser.Scene {
       Math.floor(this.player.height * 0.7)
     );
     this.player.setDepth(10);
+
+    // ------------------------------------------------------------------
+    // Concert fans in the FOREGROUND (depth 20, ABOVE player)
+    // ------------------------------------------------------------------
+    this.fans = [];
+    var fanTypes = ['fan-1', 'fan-2', 'fan-3', 'fan-4'];
+    for (var i = 0; i < 20; i++) {
+      var fanType = fanTypes[i % 4];
+      var fanX = i * 25 + Phaser.Math.Between(-3, 3);
+      var fanY = 255 + Phaser.Math.Between(-4, 4);
+      var fan = this.add.sprite(fanX, fanY, fanType + '-a')
+        .setDepth(20)
+        .setOrigin(0.5, 1);
+      var scale = 0.8 + Math.random() * 0.4;
+      fan.setScale(scale);
+      fan.fanType = fanType;
+      this.fans.push(fan);
+    }
+
+    // Animate fans — staggered timing for natural feel
+    this.time.addEvent({
+      delay: 300,
+      loop: true,
+      callback: function () {
+        if (self.gameOver) return;
+        for (var i = 0; i < self.fans.length; i++) {
+          var frame = ((Date.now() + i * 137) % 600 < 300) ? 'a' : 'b';
+          self.fans[i].setTexture(self.fans[i].fanType + '-' + frame);
+        }
+      }
+    });
 
     // ------------------------------------------------------------------
     // Item groups
@@ -131,11 +240,13 @@ class Level1Scene extends Phaser.Scene {
       color: '#ffff00'
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
 
-    // Notes counter
-    this.notesText = this.add.text(10, 258, '\u266A 0', {
-      fontSize: '8px',
+    // Notes counter — more prominent with label
+    this.notesText = this.add.text(10, 256, 'NOTES: 0', {
+      fontSize: '9px',
       fontFamily: 'monospace',
-      color: '#9966ff'
+      color: '#cc88ff',
+      stroke: '#000000',
+      strokeThickness: 2
     }).setOrigin(0, 1).setScrollFactor(0).setDepth(100);
 
     // Timer
@@ -161,6 +272,10 @@ class Level1Scene extends Phaser.Scene {
     if (window.audioManager) {
       window.audioManager.playLevel1Music();
     }
+
+    // Pause keys
+    this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
   }
 
   // ====================================================================
@@ -199,7 +314,7 @@ class Level1Scene extends Phaser.Scene {
     var group = isGood ? this.goodItems : this.badItems;
     var item = group.create(randomX, -20, texture);
     item.itemType = type;
-    item.setDepth(5);
+    item.setDepth(15); // Between player (10) and fans (20) — visible in play area
 
     // Slightly smaller body for forgiving collection
     item.body.setSize(
@@ -241,7 +356,17 @@ class Level1Scene extends Phaser.Scene {
     if (item.itemType === 'note') {
       this.notesCount++;
       this.registry.set('notesCollected', this.registry.get('notesCollected') + 1);
-      this.notesText.setText('\u266A ' + this.notesCount);
+      this.notesText.setText('NOTES: ' + this.notesCount);
+
+      // Extra pulse on notes text when collected
+      this.tweens.add({
+        targets: this.notesText,
+        scaleX: 1.5,
+        scaleY: 1.5,
+        duration: 100,
+        yoyo: true,
+        ease: 'Quad.easeOut'
+      });
     }
 
     // Audio
@@ -460,6 +585,22 @@ class Level1Scene extends Phaser.Scene {
       duration: 300
     });
 
+    // Notes collected summary
+    var notesSummary = this.add.text(240, 155, 'NOTES COLLECTED: ' + this.notesCount, {
+      fontSize: '9px',
+      fontFamily: 'monospace',
+      color: '#cc88ff',
+      stroke: '#000000',
+      strokeThickness: 2
+    }).setOrigin(0.5).setDepth(200).setAlpha(0);
+
+    this.tweens.add({
+      targets: notesSummary,
+      alpha: 1,
+      delay: 900,
+      duration: 300
+    });
+
     var self = this;
     this.time.delayedCall(2500, function () {
       self.controls.destroy();
@@ -493,6 +634,12 @@ class Level1Scene extends Phaser.Scene {
   // UPDATE
   // ====================================================================
   update(time, delta) {
+    if (Phaser.Input.Keyboard.JustDown(this.pauseKey) || Phaser.Input.Keyboard.JustDown(this.pKey)) {
+      this.scene.pause();
+      this.scene.launch('PauseScene', { pausedScene: 'Level1Scene' });
+      return;
+    }
+
     if (this.gameOver) return;
 
     // ------------------------------------------------------------------

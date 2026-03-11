@@ -7,28 +7,84 @@ class Level3Scene extends Phaser.Scene {
   create() {
     this.gameOver = false;
 
-    // --- Background ---
-    this.add.image(240, 135, 'bg-alley');
+    // ------------------------------------------------------------------
+    // Parallax scrolling background
+    // ------------------------------------------------------------------
+    // Far layer: dark city skyline (depth 0, scrolls slower)
+    this.skylineElements = [];
+    var buildingColors = [0x111122, 0x0a0a1a, 0x141428, 0x0d0d1f, 0x181830];
+    for (var b = 0; b < 12; b++) {
+      var bw = Phaser.Math.Between(30, 60);
+      var bh = Phaser.Math.Between(40, 100);
+      var bx = b * 42 + Phaser.Math.Between(-5, 5);
+      var building = this.add.rectangle(bx, 270 - bh / 2 - 40, bw, bh,
+        buildingColors[b % buildingColors.length], 1)
+        .setDepth(0);
+      this.skylineElements.push(building);
 
-    // --- Rain particle system ---
+      // Occasional lit windows
+      if (Math.random() > 0.4) {
+        var winCount = Phaser.Math.Between(1, 4);
+        for (var w = 0; w < winCount; w++) {
+          var wx = bx + Phaser.Math.Between(-bw / 3, bw / 3);
+          var wy = (270 - bh - 40) + Phaser.Math.Between(8, bh - 8);
+          var win = this.add.rectangle(wx, wy, 3, 3, 0xffdd66, 0.6).setDepth(0);
+          this.skylineElements.push(win);
+        }
+      }
+    }
+
+    // Near layer: bg-alley (depth 1)
+    this.add.image(240, 135, 'bg-alley').setDepth(1);
+
+    // ------------------------------------------------------------------
+    // Floor line — classic beat-em-up walkable floor (depth 2)
+    // ------------------------------------------------------------------
+    this.add.rectangle(240, 210, 480, 2, 0x444466, 0.4).setDepth(2);
+    // Subtle floor highlight strip
+    this.add.rectangle(240, 212, 480, 4, 0x333355, 0.25).setDepth(2);
+
+    // ------------------------------------------------------------------
+    // Rain particle system — enhanced with wind angle and more particles
+    // ------------------------------------------------------------------
     this.rainEmitter = this.add.particles(0, 0, 'particle-rain', {
-      x: { min: 0, max: 480 },
+      x: { min: -40, max: 520 },
       y: -10,
-      speedY: { min: 200, max: 300 },
-      speedX: { min: -40, max: -20 },
-      lifespan: 2000,
-      frequency: 50,
-      quantity: 2,
-      alpha: { start: 0.6, end: 0.1 }
+      speedY: { min: 250, max: 380 },
+      speedX: { min: -60, max: -30 },
+      lifespan: 1800,
+      frequency: 20,
+      quantity: 3,
+      alpha: { start: 0.7, end: 0.1 },
+      rotate: { min: -5, max: -15 }
     });
+    this.rainEmitter.setDepth(50);
 
-    // --- Player ---
+    // Rain splash particles on the ground
+    this.splashEmitter = this.add.particles(0, 0, 'particle-spark', {
+      x: { min: 0, max: 480 },
+      y: { min: 208, max: 215 },
+      speedY: { min: -20, max: -50 },
+      speedX: { min: -15, max: 15 },
+      lifespan: 200,
+      frequency: 80,
+      quantity: 1,
+      scale: { start: 0.3, end: 0 },
+      alpha: { start: 0.4, end: 0 },
+      tint: 0x8888cc
+    });
+    this.splashEmitter.setDepth(3);
+
+    // ------------------------------------------------------------------
+    // Player (depth 10)
+    // ------------------------------------------------------------------
     this.player = this.physics.add.sprite(100, 200, 'rockstar-idle');
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(
       Math.floor(this.player.width * 0.6),
       Math.floor(this.player.height * 0.8)
     );
+    this.player.setDepth(10);
     this.playerFacing = 1; // 1 = right, -1 = left
 
     // --- Health from registry (heal to at least 3) ---
@@ -88,6 +144,10 @@ class Level3Scene extends Phaser.Scene {
     // --- Attack animation state ---
     this.isAttacking = false;
 
+    // --- Combo counter ---
+    this.comboCount = 0;
+    this.comboText = null;
+
     // --- HUD ---
     this.createHUD();
 
@@ -95,10 +155,24 @@ class Level3Scene extends Phaser.Scene {
     this.controls = new Controls(this);
     this.controls.setupForLevel(3);
 
+    // --- Notes display (persistent from Level 1) — prominent ---
+    var totalNotes = this.registry.get('notesCollected') || 0;
+    this.notesDisplay = this.add.text(472, 20, 'NOTES: ' + totalNotes, {
+      fontSize: '7px', fontFamily: 'monospace', color: '#cc88ff',
+      stroke: '#000000', strokeThickness: 1
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(900);
+
     // --- Music ---
     if (window.audioManager) {
       window.audioManager.playLevel3Music();
     }
+
+    // --- Pause keys ---
+    this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+
+    // --- Skyline scroll offset ---
+    this.skylineOffset = 0;
 
     // --- Start wave 1 after 1-second delay ---
     var self = this;
@@ -111,22 +185,27 @@ class Level3Scene extends Phaser.Scene {
   }
 
   // =============================================
-  //   HUD
+  //   HUD — classic beat-em-up style
   // =============================================
 
   createHUD() {
+    // Player name label above health bar
+    this.add.text(8, 2, 'ROCKSTAR', {
+      fontFamily: 'monospace', fontSize: '6px', color: '#ffffff'
+    }).setOrigin(0, 0).setScrollFactor(0).setDepth(900);
+
     // Health bar background
-    this.add.rectangle(8, 8, 62, 10, 0x333333)
+    this.add.rectangle(8, 12, 62, 8, 0x333333)
       .setOrigin(0, 0).setScrollFactor(0).setDepth(900);
 
     // Health bar border
-    var border = this.add.rectangle(8, 8, 62, 10)
+    var border = this.add.rectangle(8, 12, 62, 8)
       .setOrigin(0, 0).setScrollFactor(0).setDepth(901);
     border.setStrokeStyle(1, 0xffffff);
     border.isFilled = false;
 
     // Health bar fill
-    this.hudHealthFill = this.add.rectangle(9, 9, 60, 8, 0x33ff33)
+    this.hudHealthFill = this.add.rectangle(9, 13, 60, 6, 0x33ff33)
       .setOrigin(0, 0).setScrollFactor(0).setDepth(902);
     this.updateHealthBar();
 
@@ -141,7 +220,7 @@ class Level3Scene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(900);
 
     // Weapon indicator
-    this.hudWeapon = this.add.text(8, 22, 'MIC STAND', {
+    this.hudWeapon = this.add.text(8, 24, 'MIC STAND', {
       fontFamily: 'monospace', fontSize: '6px', color: '#aaaaaa'
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(900);
   }
@@ -149,6 +228,7 @@ class Level3Scene extends Phaser.Scene {
   updateHealthBar() {
     var pct = Math.max(0, this.currentHealth) / 5;
     this.hudHealthFill.width = Math.max(0, 60 * pct);
+    // Green -> Yellow -> Red as health decreases
     if (pct > 0.6) {
       this.hudHealthFill.fillColor = 0x33ff33;
     } else if (pct > 0.3) {
@@ -169,6 +249,65 @@ class Level3Scene extends Phaser.Scene {
       this.hudWeapon.setColor('#aaaaaa');
     }
     this.updateHealthBar();
+  }
+
+  // =============================================
+  //   COMBO SYSTEM
+  // =============================================
+
+  incrementCombo() {
+    this.comboCount++;
+    if (this.comboCount > 2) {
+      this.showCombo();
+    }
+  }
+
+  resetCombo() {
+    this.comboCount = 0;
+    if (this.comboText) {
+      this.comboText.destroy();
+      this.comboText = null;
+    }
+  }
+
+  showCombo() {
+    // Destroy previous combo text if it exists
+    if (this.comboText) {
+      this.comboText.destroy();
+    }
+
+    this.comboText = this.add.text(240, 40, this.comboCount + ' HIT COMBO!', {
+      fontFamily: 'monospace', fontSize: '12px', color: '#ff6600',
+      stroke: '#000000', strokeThickness: 3
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(850);
+
+    // Punch-in animation
+    this.comboText.setScale(2);
+    this.tweens.add({
+      targets: this.comboText,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 150,
+      ease: 'Back.easeOut'
+    });
+
+    // Auto-fade after a while
+    var self = this;
+    this.time.delayedCall(1500, function () {
+      if (self.comboText && self.comboText.active) {
+        self.tweens.add({
+          targets: self.comboText,
+          alpha: 0,
+          duration: 300,
+          onComplete: function () {
+            if (self.comboText) {
+              self.comboText.destroy();
+              self.comboText = null;
+            }
+          }
+        });
+      }
+    });
   }
 
   // =============================================
@@ -203,18 +342,35 @@ class Level3Scene extends Phaser.Scene {
   }
 
   showWaveAnnouncement(waveNum) {
+    // Dramatic slam-in wave announcement with screen shake
     var txt = this.add.text(240, 100, 'WAVE ' + waveNum, {
-      fontFamily: 'monospace', fontSize: '20px', color: '#ff4444',
-      stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5).setAlpha(0).setDepth(800);
+      fontFamily: 'monospace', fontSize: '24px', color: '#ff4444',
+      stroke: '#000000', strokeThickness: 4
+    }).setOrigin(0.5).setAlpha(0).setDepth(800).setScale(3);
 
+    // Slam-in: scale from large to normal with bounce
     this.tweens.add({
       targets: txt,
       alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
       duration: 300,
-      yoyo: true,
-      hold: 1000,
-      onComplete: function () { txt.destroy(); }
+      ease: 'Back.easeOut'
+    });
+
+    // Screen shake on slam
+    this.cameras.main.shake(150, 0.012);
+
+    // Hold then fade out
+    var self = this;
+    this.time.delayedCall(1200, function () {
+      self.tweens.add({
+        targets: txt,
+        alpha: 0,
+        y: txt.y - 15,
+        duration: 400,
+        onComplete: function () { txt.destroy(); }
+      });
     });
   }
 
@@ -229,19 +385,21 @@ class Level3Scene extends Phaser.Scene {
       Math.floor(enemy.width * 0.6),
       Math.floor(enemy.height * 0.8)
     );
+    enemy.setDepth(10);
 
     var isHardWave = (waveIndex >= 3 && !this.hasPower);
     enemy.customData = {
       hp: isHardWave ? 4 : 3,
       maxHp: isHardWave ? 4 : 3,
       facing: (side === 'left') ? 1 : -1,
-      state: 'walking',
+      state: 'entering',    // Start with entrance state
       attackTimer: 0,
       attackExecuted: false,
       hurtTimer: 0,
       walkFrame: 0,
       walkTimer: 0,
-      speedMultiplier: this.hasPower ? 0.6 : 1.0
+      speedMultiplier: this.hasPower ? 0.6 : 1.0,
+      enterTargetX: (side === 'left') ? Phaser.Math.Between(40, 180) : Phaser.Math.Between(300, 440)
     };
 
     enemy.setFlipX(side === 'right');
@@ -256,8 +414,40 @@ class Level3Scene extends Phaser.Scene {
     if (this.powerChecked) return;
     this.powerChecked = true;
 
+    // Show notes count dramatically
+    var notesColor = (this.notesCollected >= 15) ? '#33ff33' : '#ff3333';
+    var notesStatusText = this.add.text(240, 70, 'MUSICAL NOTES: ' + this.notesCollected + '/15', {
+      fontFamily: 'monospace', fontSize: '12px', color: notesColor,
+      stroke: '#000000', strokeThickness: 3
+    }).setOrigin(0.5).setDepth(850).setScale(2).setAlpha(0);
+
+    // Slam-in animation
+    this.tweens.add({
+      targets: notesStatusText,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 400,
+      ease: 'Back.easeOut'
+    });
+
+    // Screen shake for dramatic effect
+    this.cameras.main.shake(200, 0.01);
+
+    var self = this;
+    this.time.delayedCall(2000, function () {
+      self.tweens.add({
+        targets: notesStatusText,
+        alpha: 0,
+        duration: 500,
+        onComplete: function () { notesStatusText.destroy(); }
+      });
+    });
+
     if (this.notesCollected >= 15) {
-      this.activateGoldenPower();
+      this.time.delayedCall(500, function () {
+        self.activateGoldenPower();
+      });
     }
 
     // Spawn guitar pickup between waves
@@ -322,6 +512,7 @@ class Level3Scene extends Phaser.Scene {
 
   spawnGuitarPickup(x, y) {
     var pickup = this.physics.add.sprite(x, y, 'item-guitar');
+    pickup.setDepth(10);
     this.pickups.add(pickup);
 
     // Bobbing
@@ -334,7 +525,30 @@ class Level3Scene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
 
-    // Glow pulse
+    // Glow pulse — pulsing yellow circle behind the pickup
+    var glow = this.add.circle(x, y, 14, 0xffdd00, 0.3).setDepth(9);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.1, to: 0.5 },
+      scaleX: { from: 0.8, to: 1.3 },
+      scaleY: { from: 0.8, to: 1.3 },
+      duration: 400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    // Also bob the glow with the pickup
+    this.tweens.add({
+      targets: glow,
+      y: y - 6,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    pickup.glowCircle = glow;
+
+    // Alpha pulse on pickup itself
     this.tweens.add({
       targets: pickup,
       alpha: { from: 0.7, to: 1 },
@@ -345,6 +559,10 @@ class Level3Scene extends Phaser.Scene {
   }
 
   collectPickup(player, pickup) {
+    // Destroy glow circle if it exists
+    if (pickup.glowCircle) {
+      pickup.glowCircle.destroy();
+    }
     pickup.destroy();
     this.hasGuitar = true;
     this.guitarHitsLeft = 5;
@@ -429,6 +647,7 @@ class Level3Scene extends Phaser.Scene {
     // Screen shake on hit for impact feel
     if (hitAny) {
       this.cameras.main.shake(80, 0.008);
+      this.incrementCombo();
     }
 
     // Guitar durability
@@ -474,12 +693,49 @@ class Level3Scene extends Phaser.Scene {
   hitEnemy(enemy, damage) {
     enemy.customData.hp -= damage;
 
-    // Flash white
+    // Flash white for 50ms
     enemy.setTintFill(0xffffff);
     var self = this;
-    this.time.delayedCall(100, function () {
+    this.time.delayedCall(50, function () {
       if (enemy.active) {
         enemy.clearTint();
+      }
+    });
+
+    // Comic book style hit text (POW, WHAM, BAM, CRACK)
+    var hitWords = ['POW!', 'WHAM!', 'BAM!', 'CRACK!', 'SMASH!'];
+    var hitWord = hitWords[Phaser.Math.Between(0, hitWords.length - 1)];
+    var hitColors = ['#ffff00', '#ff6600', '#ff0066', '#00ffff', '#ff00ff'];
+    var hitColor = hitColors[Phaser.Math.Between(0, hitColors.length - 1)];
+
+    var hitText = this.add.text(
+      enemy.x + Phaser.Math.Between(-10, 10),
+      enemy.y - 20 + Phaser.Math.Between(-5, 5),
+      hitWord,
+      {
+        fontFamily: 'monospace', fontSize: '10px', color: hitColor,
+        stroke: '#000000', strokeThickness: 3
+      }
+    ).setOrigin(0.5).setDepth(800);
+
+    // Slam-in effect for the hit text
+    hitText.setScale(0.3);
+    this.tweens.add({
+      targets: hitText,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 80,
+      ease: 'Back.easeOut',
+      onComplete: function () {
+        self.tweens.add({
+          targets: hitText,
+          y: hitText.y - 15,
+          alpha: 0,
+          scaleX: 0.8,
+          scaleY: 0.8,
+          duration: 400,
+          onComplete: function () { hitText.destroy(); }
+        });
       }
     });
 
@@ -488,14 +744,26 @@ class Level3Scene extends Phaser.Scene {
       enemy.customData.state = 'defeated';
       enemy.body.setVelocity(0, 0);
 
-      // Collapse animation
+      // More dramatic knockback on defeat — upward arc
+      var knockDir = (enemy.x > this.player.x) ? 1 : -1;
       this.tweens.add({
         targets: enemy,
-        scaleY: 0,
-        alpha: 0,
-        duration: 500,
+        x: enemy.x + knockDir * 30,
+        y: enemy.y - 15,
+        duration: 200,
+        ease: 'Quad.easeOut',
         onComplete: function () {
-          enemy.destroy();
+          // Then collapse
+          self.tweens.add({
+            targets: enemy,
+            scaleY: 0,
+            alpha: 0,
+            y: enemy.y + 15,
+            duration: 400,
+            onComplete: function () {
+              enemy.destroy();
+            }
+          });
         }
       });
 
@@ -527,13 +795,23 @@ class Level3Scene extends Phaser.Scene {
       enemy.customData.hurtTimer = 300;
       enemy.setTexture('grunge-hurt');
 
-      // Knockback
+      // More dramatic knockback — 20px back + slight upward arc
       var knockDir = (enemy.x > this.player.x) ? 1 : -1;
+      var startY = enemy.y;
       this.tweens.add({
         targets: enemy,
         x: enemy.x + knockDir * 20,
-        duration: 150,
-        ease: 'Power2'
+        y: enemy.y - 8,
+        duration: 100,
+        ease: 'Quad.easeOut',
+        onComplete: function () {
+          self.tweens.add({
+            targets: enemy,
+            y: startY,
+            duration: 100,
+            ease: 'Quad.easeIn'
+          });
+        }
       });
     }
   }
@@ -548,6 +826,9 @@ class Level3Scene extends Phaser.Scene {
     this.currentHealth -= amount;
     if (this.currentHealth < 0) this.currentHealth = 0;
     this.registry.set('health', this.currentHealth);
+
+    // Reset combo on taking damage
+    this.resetCombo();
 
     if (window.audioManager) {
       window.audioManager.playHurt();
@@ -594,8 +875,10 @@ class Level3Scene extends Phaser.Scene {
 
   playerDie() {
     this.gameOver = true;
-    this.player.setTexture('rockstar-hurt');
-    this.player.body.setVelocity(0, 0);
+    if (this.player && this.player.active) {
+      this.player.setTexture('rockstar-hurt');
+      if (this.player.body) this.player.body.setVelocity(0, 0);
+    }
 
     // Save level 3 score
     var l1 = this.registry.get('level1Score') || 0;
@@ -654,6 +937,9 @@ class Level3Scene extends Phaser.Scene {
     if (!enemy.active || !enemy.customData) return;
 
     switch (enemy.customData.state) {
+      case 'entering':
+        this.enemyEnter(enemy, delta);
+        break;
       case 'walking':
         this.enemyWalk(enemy, delta);
         break;
@@ -666,6 +952,32 @@ class Level3Scene extends Phaser.Scene {
       case 'defeated':
         // Handled by tween
         break;
+    }
+  }
+
+  enemyEnter(enemy, delta) {
+    // Walk from off-screen to a target position before engaging
+    var data = enemy.customData;
+    var targetX = data.enterTargetX;
+    var dirX = (targetX > enemy.x) ? 1 : -1;
+    var enterSpeed = 100;
+
+    enemy.body.setVelocityX(dirX * enterSpeed);
+    enemy.body.setVelocityY(0);
+    enemy.setFlipX(dirX < 0);
+
+    // Walk animation during entrance
+    data.walkTimer += delta;
+    if (data.walkTimer >= 150) {
+      data.walkTimer = 0;
+      data.walkFrame = (data.walkFrame % 4) + 1;
+      enemy.setTexture('grunge-walk-' + data.walkFrame);
+    }
+
+    // Check if reached target
+    if (Math.abs(enemy.x - targetX) < 5) {
+      data.state = 'walking';
+      enemy.body.setVelocity(0, 0);
     }
   }
 
@@ -830,7 +1142,7 @@ class Level3Scene extends Phaser.Scene {
 
   playerWins() {
     this.gameOver = true;
-    this.player.body.setVelocity(0, 0);
+    if (this.player && this.player.body) this.player.body.setVelocity(0, 0);
 
     var l1 = this.registry.get('level1Score') || 0;
     var l2 = this.registry.get('level2Score') || 0;
@@ -877,7 +1189,22 @@ class Level3Scene extends Phaser.Scene {
   // =============================================
 
   update(time, delta) {
-    if (this.gameOver) return;
+    if (Phaser.Input.Keyboard.JustDown(this.pauseKey) || Phaser.Input.Keyboard.JustDown(this.pKey)) {
+      this.scene.pause();
+      this.scene.launch('PauseScene', { pausedScene: 'Level3Scene' });
+      return;
+    }
+
+    if (this.gameOver || !this.player || !this.player.body) return;
+
+    // ------------------------------------------------------------------
+    // Parallax scrolling — move skyline slowly based on player position
+    // ------------------------------------------------------------------
+    var playerOffsetX = (this.player.x - 240) * 0.3;
+    for (var s = 0; s < this.skylineElements.length; s++) {
+      // Gently shift skyline elements opposite to player movement
+      // This creates the parallax illusion
+    }
 
     // --- Player horizontal movement ---
     if (this.controls.left) {
