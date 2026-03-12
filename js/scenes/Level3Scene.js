@@ -40,9 +40,17 @@ class Level3Scene extends Phaser.Scene {
     // ------------------------------------------------------------------
     // Floor line — classic beat-em-up walkable floor (depth 2)
     // ------------------------------------------------------------------
-    this.add.rectangle(240, 210, 480, 2, 0x444466, 0.4).setDepth(2);
+    this.add.rectangle(240, 210, 480, 2, 0x6666aa, 0.5).setDepth(2);
     // Subtle floor highlight strip
-    this.add.rectangle(240, 212, 480, 4, 0x333355, 0.25).setDepth(2);
+    this.add.rectangle(240, 212, 480, 4, 0x555588, 0.35).setDepth(2);
+    // Ambient ground glow for visibility
+    this.add.rectangle(240, 225, 480, 30, 0x222244, 0.3).setDepth(1);
+
+    // ------------------------------------------------------------------
+    // Grunge guys sitting at the sides (depth 3)
+    // ------------------------------------------------------------------
+    this.add.image(30, 195, 'grunge-sitting').setDepth(3);
+    this.add.image(450, 195, 'grunge-sitting').setDepth(3).setFlipX(true);
 
     // ------------------------------------------------------------------
     // Rain particle system — enhanced with wind angle and more particles
@@ -110,10 +118,8 @@ class Level3Scene extends Phaser.Scene {
     // --- Wave system ---
     this.waves = [
       { count: 2, sides: ['right', 'right'] },
-      { count: 3, sides: ['left', 'right', 'right'] },
       { count: 3, sides: ['left', 'right', 'left'] },
-      { count: 4, sides: ['right', 'left', 'right', 'left'] },
-      { count: 5, sides: ['right', 'left', 'right', 'left', 'right'] }
+      { count: 4, sides: ['right', 'left', 'right', 'left'] }
     ];
     this.currentWave = 0;
     this.activeEnemies = 0;
@@ -215,7 +221,7 @@ class Level3Scene extends Phaser.Scene {
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(900);
 
     // Wave indicator
-    this.hudWave = this.add.text(240, 8, 'WAVE 1/5', {
+    this.hudWave = this.add.text(240, 8, 'WAVE 1/3', {
       fontFamily: 'monospace', fontSize: '8px', color: '#ffffff'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(900);
 
@@ -240,7 +246,7 @@ class Level3Scene extends Phaser.Scene {
 
   updateHUD() {
     this.hudScore.setText('SCORE: ' + this.score);
-    this.hudWave.setText('WAVE ' + (this.currentWave + 1) + '/5');
+    this.hudWave.setText('WAVE ' + (this.currentWave + 1) + '/' + this.waves.length);
     if (this.hasGuitar) {
       this.hudWeapon.setText('GUITAR (' + this.guitarHitsLeft + ')');
       this.hudWeapon.setColor('#ffcc00');
@@ -380,7 +386,9 @@ class Level3Scene extends Phaser.Scene {
     var startX = (side === 'left') ? -30 : 510;
     var startY = Phaser.Math.Between(180, 230);
 
-    var enemy = this.physics.add.sprite(startX, startY, 'grunge-idle');
+    var enemyTypes = ['grunge', 'beavis', 'butthead'];
+    var enemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+    var enemy = this.physics.add.sprite(startX, startY, enemyType + '-idle');
     enemy.body.setSize(
       Math.floor(enemy.width * 0.6),
       Math.floor(enemy.height * 0.8)
@@ -389,6 +397,7 @@ class Level3Scene extends Phaser.Scene {
 
     var isHardWave = (waveIndex >= 3 && !this.hasPower);
     enemy.customData = {
+      type: enemyType,
       hp: isHardWave ? 4 : 3,
       maxHp: isHardWave ? 4 : 3,
       facing: (side === 'left') ? 1 : -1,
@@ -403,6 +412,16 @@ class Level3Scene extends Phaser.Scene {
     };
 
     enemy.setFlipX(side === 'right');
+
+    // Brighten enemies for contrast against dark alley background
+    if (enemyType === 'beavis') {
+      enemy.setTint(0xffddcc); // warm bright tint
+    } else if (enemyType === 'butthead') {
+      enemy.setTint(0xddddff); // cool bright tint
+    } else {
+      enemy.setTint(0xeeddcc); // slight warm boost for grunge
+    }
+
     this.enemies.add(enemy);
   }
 
@@ -793,7 +812,7 @@ class Level3Scene extends Phaser.Scene {
       // --- HURT ---
       enemy.customData.state = 'hurt';
       enemy.customData.hurtTimer = 300;
-      enemy.setTexture('grunge-hurt');
+      enemy.setTexture(enemy.customData.type + '-hurt');
 
       // More dramatic knockback — 20px back + slight upward arc
       var knockDir = (enemy.x > this.player.x) ? 1 : -1;
@@ -971,7 +990,7 @@ class Level3Scene extends Phaser.Scene {
     if (data.walkTimer >= 150) {
       data.walkTimer = 0;
       data.walkFrame = (data.walkFrame % 4) + 1;
-      enemy.setTexture('grunge-walk-' + data.walkFrame);
+      enemy.setTexture(data.type + '-walk-' + data.walkFrame);
     }
 
     // Check if reached target
@@ -1002,7 +1021,7 @@ class Level3Scene extends Phaser.Scene {
     if (data.walkTimer >= 150) {
       data.walkTimer = 0;
       data.walkFrame = (data.walkFrame % 4) + 1;
-      enemy.setTexture('grunge-walk-' + data.walkFrame);
+      enemy.setTexture(data.type + '-walk-' + data.walkFrame);
     }
 
     // Check attack range
@@ -1021,7 +1040,7 @@ class Level3Scene extends Phaser.Scene {
 
     // Wind-up (0-500ms): show attack pose
     if (data.attackTimer < 500) {
-      enemy.setTexture('grunge-attack');
+      enemy.setTexture(data.type + '-attack');
       return;
     }
 
@@ -1064,7 +1083,7 @@ class Level3Scene extends Phaser.Scene {
       data.state = 'walking';
       data.attackTimer = 0;
       data.attackExecuted = false;
-      enemy.setTexture('grunge-idle');
+      enemy.setTexture(data.type + '-idle');
     }
   }
 
@@ -1097,7 +1116,7 @@ class Level3Scene extends Phaser.Scene {
     if (data.hurtTimer <= 0) {
       data.state = 'walking';
       data.walkTimer = 0;
-      enemy.setTexture('grunge-idle');
+      enemy.setTexture(data.type + '-idle');
       enemy.clearTint();
     }
   }
@@ -1219,12 +1238,23 @@ class Level3Scene extends Phaser.Scene {
       this.player.body.setVelocityX(0);
     }
 
-    // No vertical movement in this brawler
-    this.player.body.setVelocityY(0);
+    // --- Player vertical movement (up/down on brawler plane) ---
+    if (this.controls.up) {
+      this.player.body.setVelocityY(-80);
+    } else if (this.controls.down) {
+      this.player.body.setVelocityY(80);
+    } else {
+      this.player.body.setVelocityY(0);
+    }
+
+    // Clamp player Y to walkable area (stage floor)
+    if (this.player.y < 175) this.player.y = 175;
+    if (this.player.y > 230) this.player.y = 230;
 
     // --- Walk animation ---
     if (!this.isAttacking) {
-      if (this.player.body.velocity.x !== 0) {
+      var isMoving = this.player.body.velocity.x !== 0 || this.player.body.velocity.y !== 0;
+      if (isMoving) {
         this.walkTimer += delta;
         if (this.walkTimer >= this.walkFrameDelay) {
           this.walkTimer = 0;

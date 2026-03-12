@@ -31,6 +31,11 @@ class Level2Scene extends Phaser.Scene {
     this.dartboard = this.add.sprite(240, 120, 'dartboard');
     this.dartboard.setDepth(2);
 
+    // Pin Ulrich face to dartboard center
+    this.ulrichFace = this.add.image(240, 120, 'ulrich-face');
+    this.ulrichFace.setDepth(3); // above dartboard (depth 2)
+    this.ulrichFace.setScale(0.6); // cover ~50% of dartboard
+
     // Dartboard movement tweens — horizontal sway
     this.tweens.add({
       targets: this.dartboard,
@@ -399,6 +404,12 @@ class Level2Scene extends Phaser.Scene {
       // Subtle crosshair pulse
       var pulse = 1 + Math.sin(time * 0.006) * 0.08;
       this.crosshair.setScale(pulse);
+    }
+
+    // Ulrich face follows dartboard position
+    if (this.ulrichFace) {
+      this.ulrichFace.x = this.dartboard.x;
+      this.ulrichFace.y = this.dartboard.y;
     }
   }
 }

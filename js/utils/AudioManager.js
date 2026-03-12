@@ -1,10 +1,13 @@
-// AudioManager.js - Pure Web Audio API sound effects and chiptune music
+// AudioManager.js - Web Audio API sound effects + WAV music playback
 class AudioManager {
   constructor() {
     this._ctx = null;
     this._musicInterval = null;
     this._musicOscillators = [];
     this._musicGains = [];
+    this._musicSource = null;   // AudioBufferSourceNode for WAV music
+    this._musicGainNode = null; // Gain node for WAV music volume
+    this._musicBuffers = {};    // Cached decoded audio buffers
   }
 
   // --- Internal helpers ---
@@ -267,11 +270,69 @@ class AudioManager {
   }
 
   stopMusic() {
+    // Stop chiptune sequencer
     if (this._musicInterval) {
       clearInterval(this._musicInterval);
       this._musicInterval = null;
     }
     this._stopMusicOscillators();
+
+    // Stop WAV music
+    if (this._musicSource) {
+      try { this._musicSource.stop(); } catch (e) { /* already stopped */ }
+      this._musicSource = null;
+    }
+    if (this._musicGainNode) {
+      try { this._musicGainNode.disconnect(); } catch (e) { /* swallow */ }
+      this._musicGainNode = null;
+    }
+  }
+
+  /**
+   * Load and play a WAV file as looping background music.
+   * Caches decoded buffers so subsequent plays are instant.
+   */
+  _playMusicFile(url, volume) {
+    this.stopMusic();
+    var self = this;
+    var ctx = this._getCtx();
+
+    var playBuffer = function (buffer) {
+      var source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      var gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume || 0.4, ctx.currentTime);
+
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(0);
+
+      self._musicSource = source;
+      self._musicGainNode = gain;
+    };
+
+    // Use cached buffer if available
+    if (this._musicBuffers[url]) {
+      playBuffer(this._musicBuffers[url]);
+      return;
+    }
+
+    // Fetch, decode, cache, and play
+    fetch(url)
+      .then(function (response) { return response.arrayBuffer(); })
+      .then(function (arrayBuffer) { return ctx.decodeAudioData(arrayBuffer); })
+      .then(function (audioBuffer) {
+        self._musicBuffers[url] = audioBuffer;
+        // Only play if nothing else started in the meantime
+        if (!self._musicSource && !self._musicInterval) {
+          playBuffer(audioBuffer);
+        }
+      })
+      .catch(function (err) {
+        console.warn('AudioManager: Could not load music file:', url, err);
+      });
   }
 
   /**
@@ -321,140 +382,19 @@ class AudioManager {
   }
 
   playTitleMusic() {
-    // Pentatonic melody loop, tempo 140bpm
-    // C5, D5, E5, G5, A5 pentatonic = 523, 587, 659, 784, 880
-    var pattern = [
-      { freq: 523, type: 'square' },
-      { freq: 659, type: 'square' },
-      { freq: 784, type: 'square' },
-      { freq: 659, type: 'square' },
-      { freq: 880, type: 'square' },
-      { freq: 784, type: 'square' },
-      { freq: 659, type: 'square' },
-      { freq: 523, type: 'square' },
-      { freq: 587, type: 'square' },
-      { freq: 784, type: 'square' },
-      { freq: 880, type: 'square' },
-      { freq: 784, type: 'square' },
-      { freq: 659, type: 'square' },
-      { freq: 587, type: 'square' },
-      { freq: 523, type: 'square' },
-      { freq: 0 } // rest
-    ];
-    this._startSequencer(pattern, 140, 0.1);
+    this._playMusicFile('music/Title_Pixel%20Shredder%20Anthem-2.wav', 0.4);
   }
 
   playLevel1Music() {
-    // Upbeat hair metal chiptune - fast tempo, power chord patterns
-    // Uses root+fifth patterns for "power chord" feel
-    // E4=330, B4=494, A4=440, G4=392, D5=587
-    var pattern = [
-      { freq: 330, type: 'square' },
-      { freq: 330, type: 'square' },
-      { freq: 494, type: 'square' },
-      { freq: 330, type: 'square' },
-      { freq: 440, type: 'square' },
-      { freq: 440, type: 'square' },
-      { freq: 659, type: 'square' },
-      { freq: 440, type: 'square' },
-      { freq: 392, type: 'square' },
-      { freq: 392, type: 'square' },
-      { freq: 587, type: 'square' },
-      { freq: 392, type: 'square' },
-      { freq: 440, type: 'square' },
-      { freq: 494, type: 'square' },
-      { freq: 330, type: 'square' },
-      { freq: 0 },
-      { freq: 330, type: 'sawtooth' },
-      { freq: 494, type: 'sawtooth' },
-      { freq: 659, type: 'sawtooth' },
-      { freq: 494, type: 'sawtooth' },
-      { freq: 440, type: 'sawtooth' },
-      { freq: 659, type: 'sawtooth' },
-      { freq: 587, type: 'sawtooth' },
-      { freq: 440, type: 'sawtooth' },
-      { freq: 392, type: 'square' },
-      { freq: 494, type: 'square' },
-      { freq: 587, type: 'square' },
-      { freq: 494, type: 'square' },
-      { freq: 440, type: 'square' },
-      { freq: 392, type: 'square' },
-      { freq: 330, type: 'square' },
-      { freq: 0 }
-    ];
-    this._startSequencer(pattern, 180, 0.1);
+    this._playMusicFile('music/Level%201_%20Neon%20Riffs-2.wav', 0.4);
   }
 
   playLevel2Music() {
-    // Comedic bouncy loop - staccato, playful
-    // Uses major scale jumps and rests for bouncy feel
-    var pattern = [
-      { freq: 523, type: 'square', duration: 0.08 },
-      { freq: 0 },
-      { freq: 659, type: 'square', duration: 0.08 },
-      { freq: 0 },
-      { freq: 784, type: 'triangle', duration: 0.08 },
-      { freq: 784, type: 'triangle', duration: 0.08 },
-      { freq: 659, type: 'square', duration: 0.08 },
-      { freq: 0 },
-      { freq: 440, type: 'square', duration: 0.08 },
-      { freq: 0 },
-      { freq: 523, type: 'triangle', duration: 0.08 },
-      { freq: 0 },
-      { freq: 659, type: 'square', duration: 0.08 },
-      { freq: 523, type: 'square', duration: 0.08 },
-      { freq: 440, type: 'triangle', duration: 0.12 },
-      { freq: 0 },
-      { freq: 392, type: 'square', duration: 0.08 },
-      { freq: 0 },
-      { freq: 523, type: 'square', duration: 0.08 },
-      { freq: 0 },
-      { freq: 659, type: 'triangle', duration: 0.08 },
-      { freq: 784, type: 'triangle', duration: 0.08 },
-      { freq: 880, type: 'square', duration: 0.12 },
-      { freq: 0 }
-    ];
-    this._startSequencer(pattern, 160, 0.1);
+    this._playMusicFile('music/Level%202_Thrash%20Stole%20My%20High%20Score.wav', 0.4);
   }
 
   playLevel3Music() {
-    // Dark, heavy grunge chiptune - lower register, dissonant
-    // E2=82, A2=110, B2=123, G2=98, D3=147, C3=131
-    var pattern = [
-      { freq: 82, type: 'sawtooth' },
-      { freq: 82, type: 'sawtooth' },
-      { freq: 82, type: 'sawtooth' },
-      { freq: 0 },
-      { freq: 98, type: 'sawtooth' },
-      { freq: 98, type: 'sawtooth' },
-      { freq: 87, type: 'sawtooth' }, // F2 - dissonant against E
-      { freq: 82, type: 'sawtooth' },
-      { freq: 110, type: 'sawtooth' },
-      { freq: 110, type: 'sawtooth' },
-      { freq: 123, type: 'sawtooth' },
-      { freq: 110, type: 'sawtooth' },
-      { freq: 98, type: 'sawtooth' },
-      { freq: 82, type: 'sawtooth' },
-      { freq: 0 },
-      { freq: 0 },
-      { freq: 82, type: 'square' },
-      { freq: 131, type: 'square' },
-      { freq: 82, type: 'square' },
-      { freq: 0 },
-      { freq: 98, type: 'square' },
-      { freq: 147, type: 'square' },
-      { freq: 131, type: 'square' },
-      { freq: 0 },
-      { freq: 110, type: 'sawtooth' },
-      { freq: 82, type: 'sawtooth' },
-      { freq: 110, type: 'sawtooth' },
-      { freq: 123, type: 'sawtooth' },
-      { freq: 98, type: 'sawtooth' },
-      { freq: 82, type: 'sawtooth' },
-      { freq: 0 },
-      { freq: 0 }
-    ];
-    this._startSequencer(pattern, 120, 0.12);
+    this._playMusicFile('music/Level%203_Grunge%20Will%20Kill%20Us%20All%20.wav', 0.4);
   }
 
   playWinMusic() {

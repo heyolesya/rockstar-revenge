@@ -135,7 +135,23 @@ class CutsceneScene extends Phaser.Scene {
       alpha: 1,
       duration: 400,
       onComplete: function () {
-        self.scene.start(self.targetScene);
+        var actualTarget = self.targetScene;
+        var tutorialLevel = null;
+
+        if (actualTarget === 'Level1Scene') tutorialLevel = 1;
+        else if (actualTarget === 'Level2Scene') tutorialLevel = 2;
+        else if (actualTarget === 'Level3Scene') tutorialLevel = 3;
+
+        if (tutorialLevel) {
+          var seen = false;
+          try { seen = sessionStorage.getItem('tutorial' + tutorialLevel + 'Seen') === 'true'; } catch (e) {}
+          if (!seen) {
+            self.scene.start('TutorialScene', { level: tutorialLevel });
+            return;
+          }
+        }
+
+        self.scene.start(actualTarget);
       }
     });
   }
@@ -261,32 +277,15 @@ class CutsceneScene extends Phaser.Scene {
       });
     });
 
-    // TV reference - small gray rectangle with colored blocks
-    this.time.delayedCall(4000, function () {
-      var tv = self.add.rectangle(240, 200, 40, 30, 0x333333).setStrokeStyle(2, 0x666666);
-
-      // Flickering colored blocks inside the TV
-      var colors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44];
-      var blocks = [];
-      for (var i = 0; i < 4; i++) {
-        var bx = 226 + (i % 2) * 14;
-        var by = 192 + Math.floor(i / 2) * 10;
-        blocks.push(
-          self.add.rectangle(bx, by, 10, 7, colors[i]).setAlpha(0.6)
-        );
-      }
-
-      // Flicker effect
-      self.time.addEvent({
-        delay: 200,
-        repeat: -1,
-        callback: function () {
-          for (var j = 0; j < blocks.length; j++) {
-            if (blocks[j].active) {
-              blocks[j].setAlpha(0.3 + Math.random() * 0.5);
-            }
-          }
-        }
+    // Vocalist portrait
+    this.time.delayedCall(3000, function () {
+      var portrait = self.add.image(240, 200, 'vocalist-portrait-2').setAlpha(0).setScale(0.6);
+      self.tweens.add({
+        targets: portrait,
+        alpha: 1,
+        scale: 0.8,
+        duration: 600,
+        ease: 'Back.easeOut'
       });
     });
 

@@ -26,7 +26,7 @@ class Level1Scene extends Phaser.Scene {
     this.spawnDelay = 800;
     this.walkFrame = 0;
     this.walkTimer = 0;
-    this.LEVEL_DURATION = 90; // seconds
+    this.LEVEL_DURATION = 60; // seconds
     this.invulnerable = false;
 
     // ------------------------------------------------------------------
@@ -37,22 +37,37 @@ class Level1Scene extends Phaser.Scene {
     // ------------------------------------------------------------------
     // Band members playing BEHIND the player (depth 2-3)
     // ------------------------------------------------------------------
-    this.bassist = this.add.sprite(80, 205, 'band-bassist-1').setDepth(3);
-    this.guitarist = this.add.sprite(400, 205, 'band-guitarist-1').setDepth(3);
-    this.drummer = this.add.sprite(240, 190, 'band-drummer-1').setDepth(2);
+    this.bassist = this.add.sprite(80, 205, 'band-bassist').setDepth(3);
+    this.guitarist = this.add.sprite(400, 205, 'band-guitarist').setDepth(3);
+    this.drummer = this.add.sprite(240, 190, 'band-drummer').setDepth(2);
 
-    // Band animation — rock back and forth
+    // Band animation — subtle rocking tween (y oscillation) since single images
     var self = this;
-    this.time.addEvent({
-      delay: 400,
-      loop: true,
-      callback: function () {
-        if (self.gameOver) return;
-        var frame = (Date.now() % 800 < 400) ? '1' : '2';
-        self.bassist.setTexture('band-bassist-' + frame);
-        self.guitarist.setTexture('band-guitarist-' + frame);
-        self.drummer.setTexture('band-drummer-' + frame);
-      }
+    this.tweens.add({
+      targets: this.bassist,
+      y: 200,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    this.tweens.add({
+      targets: this.guitarist,
+      y: 200,
+      duration: 480,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      delay: 120
+    });
+    this.tweens.add({
+      targets: this.drummer,
+      y: 185,
+      duration: 520,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      delay: 60
     });
 
     // ------------------------------------------------------------------
@@ -105,71 +120,15 @@ class Level1Scene extends Phaser.Scene {
     }
 
     // ------------------------------------------------------------------
-    // Fire/pyro columns on the sides (depth 5)
+    // Player (depth 10 — on stage with the band)
     // ------------------------------------------------------------------
-    var pyroPositions = [15, 465];
-    this.pyros = [];
-    for (var p = 0; p < pyroPositions.length; p++) {
-      var pyroX = pyroPositions[p];
-      for (var py = 0; py < 4; py++) {
-        var pyroColors = [0xff6600, 0xffaa00, 0xffdd00, 0xffffaa];
-        var pyro = this.add.rectangle(pyroX, 220 - py * 12, 10 - py * 2, 14, pyroColors[py], 0.6 - py * 0.1)
-          .setDepth(5);
-        this.pyros.push(pyro);
-        this.tweens.add({
-          targets: pyro,
-          scaleY: { from: 0.6, to: 1.4 },
-          alpha: { from: 0.3, to: 0.7 },
-          duration: 150 + py * 80,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
-          delay: py * 50
-        });
-      }
-    }
-
-    // ------------------------------------------------------------------
-    // Player (depth 10 — between band and fans)
-    // ------------------------------------------------------------------
-    this.player = this.physics.add.sprite(240, 230, 'rockstar-idle');
+    this.player = this.physics.add.sprite(240, 200, 'rockstar-idle');
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(
       Math.floor(this.player.width * 0.6),
       Math.floor(this.player.height * 0.7)
     );
     this.player.setDepth(10);
-
-    // ------------------------------------------------------------------
-    // Concert fans in the FOREGROUND (depth 20, ABOVE player)
-    // ------------------------------------------------------------------
-    this.fans = [];
-    var fanTypes = ['fan-1', 'fan-2', 'fan-3', 'fan-4'];
-    for (var i = 0; i < 20; i++) {
-      var fanType = fanTypes[i % 4];
-      var fanX = i * 25 + Phaser.Math.Between(-3, 3);
-      var fanY = 255 + Phaser.Math.Between(-4, 4);
-      var fan = this.add.sprite(fanX, fanY, fanType + '-a')
-        .setDepth(20)
-        .setOrigin(0.5, 1);
-      var scale = 0.8 + Math.random() * 0.4;
-      fan.setScale(scale);
-      fan.fanType = fanType;
-      this.fans.push(fan);
-    }
-
-    // Animate fans — staggered timing for natural feel
-    this.time.addEvent({
-      delay: 300,
-      loop: true,
-      callback: function () {
-        if (self.gameOver) return;
-        for (var i = 0; i < self.fans.length; i++) {
-          var frame = ((Date.now() + i * 137) % 600 < 300) ? 'a' : 'b';
-          self.fans[i].setTexture(self.fans[i].fanType + '-' + frame);
-        }
-      }
-    });
 
     // ------------------------------------------------------------------
     // Item groups
@@ -253,14 +212,18 @@ class Level1Scene extends Phaser.Scene {
     this.timerText = this.add.text(240, 8, this.LEVEL_DURATION + 's', {
       fontSize: '10px',
       fontFamily: 'monospace',
-      color: '#ffffff'
+      color: '#ff3333',
+      stroke: '#000000',
+      strokeThickness: 3
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
     // Level indicator
     this.add.text(240, 22, 'LEVEL 1', {
       fontSize: '8px',
       fontFamily: 'monospace',
-      color: '#aaaaaa'
+      color: '#ffcc00',
+      stroke: '#000000',
+      strokeThickness: 2
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
     // ------------------------------------------------------------------
@@ -314,7 +277,7 @@ class Level1Scene extends Phaser.Scene {
     var group = isGood ? this.goodItems : this.badItems;
     var item = group.create(randomX, -20, texture);
     item.itemType = type;
-    item.setDepth(15); // Between player (10) and fans (20) — visible in play area
+    item.setDepth(15);
 
     // Slightly smaller body for forgiving collection
     item.body.setSize(
@@ -601,8 +564,20 @@ class Level1Scene extends Phaser.Scene {
       duration: 300
     });
 
+    // Show vocalist portrait after summary
+    var portrait = this.add.image(240, 180, 'vocalist-portrait-2')
+      .setDepth(200).setAlpha(0).setScale(0.5);
+    this.tweens.add({
+      targets: portrait,
+      alpha: 1,
+      scale: 1,
+      delay: 1200,
+      duration: 500,
+      ease: 'Back.easeOut'
+    });
+
     var self = this;
-    this.time.delayedCall(2500, function () {
+    this.time.delayedCall(3500, function () {
       self.controls.destroy();
       self.scene.start('CutsceneScene', { cutscene: 'level1to2' });
     });

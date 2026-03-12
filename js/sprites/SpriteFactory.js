@@ -142,6 +142,7 @@ class SpriteFactory {
      *  HELPER:  fresh graphics context, auto-destroy after generateTexture
      * =================================================================*/
     static _tex(scene, key, w, h, drawFn) {
+        if (scene.textures.exists(key)) return; // Already loaded from file
         var g = scene.add.graphics();
         drawFn(g, w, h);
         g.generateTexture(key, w, h);

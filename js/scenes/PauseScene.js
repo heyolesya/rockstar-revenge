@@ -54,15 +54,36 @@ class PauseScene extends Phaser.Scene {
       self._quitToTitle();
     });
 
-    // ---- Keyboard shortcuts ----
+    // ---- Keyboard navigation ----
+    this.menuOptions = [this.resumeBtn, this.restartBtn, this.quitBtn];
+    this.menuCallbacks = [
+      function () { self._resume(); },
+      function () { self._restartLevel(); },
+      function () { self._quitToTitle(); }
+    ];
+    this.selectedIndex = 0;
+    this._highlightOption(0);
+
     this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+    this.upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
+    this.downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
+    this.wKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    this.sKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     this.escKey.on('down', function () { self._resume(); });
     this.pKey.on('down', function () { self._resume(); });
+    this.upKey.on('down', function () { self._moveSelection(-1); });
+    this.downKey.on('down', function () { self._moveSelection(1); });
+    this.wKey.on('down', function () { self._moveSelection(-1); });
+    this.sKey.on('down', function () { self._moveSelection(1); });
+    this.enterKey.on('down', function () { self._confirmSelection(); });
+    this.spaceKey.on('down', function () { self._confirmSelection(); });
 
     // ---- Hint text ----
-    this.add.text(240, 250, 'P / ESC to resume', {
+    this.add.text(240, 250, 'ARROWS / ENTER to navigate  |  P / ESC to resume', {
       fontSize: '6px',
       fontFamily: 'monospace',
       color: '#555555'
@@ -99,6 +120,36 @@ class PauseScene extends Phaser.Scene {
     });
 
     return text;
+  }
+
+  // ==================================================================
+  //  KEYBOARD NAVIGATION
+  // ==================================================================
+
+  _highlightOption(index) {
+    for (var i = 0; i < this.menuOptions.length; i++) {
+      if (i === index) {
+        this.menuOptions[i].setColor('#FFD700');
+        this.menuOptions[i].setScale(1.15);
+      } else {
+        this.menuOptions[i].setColor('#FFFFFF');
+        this.menuOptions[i].setScale(1.0);
+      }
+    }
+  }
+
+  _moveSelection(dir) {
+    if (window.audioManager) {
+      try { window.audioManager.playMenuSelect(); } catch (e) { /* silent */ }
+    }
+    this.selectedIndex = (this.selectedIndex + dir + this.menuOptions.length) % this.menuOptions.length;
+    this._highlightOption(this.selectedIndex);
+  }
+
+  _confirmSelection() {
+    if (this.menuCallbacks[this.selectedIndex]) {
+      this.menuCallbacks[this.selectedIndex]();
+    }
   }
 
   // ==================================================================
@@ -166,7 +217,9 @@ class PauseScene extends Phaser.Scene {
   // ==================================================================
 
   shutdown() {
-    if (this.escKey) this.escKey.removeAllListeners();
-    if (this.pKey) this.pKey.removeAllListeners();
+    var keys = [this.escKey, this.pKey, this.upKey, this.downKey, this.wKey, this.sKey, this.enterKey, this.spaceKey];
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i]) keys[i].removeAllListeners();
+    }
   }
 }

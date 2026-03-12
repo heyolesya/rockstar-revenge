@@ -145,15 +145,7 @@ class TitleScene extends Phaser.Scene {
 
         var self = this;
         this.time.delayedCall(350, function() {
-            // Show tutorial on first play in this session
-            var tutorialSeen = false;
-            try { tutorialSeen = sessionStorage.getItem('tutorialSeen') === 'true'; } catch (e) { /* silent */ }
-
-            if (!tutorialSeen) {
-                self.scene.start('TutorialScene');
-            } else {
-                self.scene.start('CutsceneScene', { cutscene: 'intro' });
-            }
+            self.scene.start('CutsceneScene', { cutscene: 'intro' });
         }, [], this);
     }
 

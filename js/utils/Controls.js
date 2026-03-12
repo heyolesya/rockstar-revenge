@@ -9,6 +9,8 @@ class Controls {
     // Track virtual button states
     this._virtualLeft = false;
     this._virtualRight = false;
+    this._virtualUp = false;
+    this._virtualDown = false;
     this._virtualAttack = false;
     this._virtualSpecial = false;
 
@@ -167,6 +169,14 @@ class Controls {
     return this.cursors.right.isDown || this.keys.D.isDown || this._virtualRight;
   }
 
+  get up() {
+    return this.cursors.up.isDown || this.keys.W.isDown || this._virtualUp;
+  }
+
+  get down() {
+    return this.cursors.down.isDown || this.keys.S.isDown || this._virtualDown;
+  }
+
   get attack() {
     return Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || this._virtualAttack;
   }
@@ -197,6 +207,8 @@ class Controls {
     this.buttons = [];
     this._virtualLeft = false;
     this._virtualRight = false;
+    this._virtualUp = false;
+    this._virtualDown = false;
     this._virtualAttack = false;
     this._virtualSpecial = false;
   }
