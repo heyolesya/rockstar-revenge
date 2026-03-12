@@ -256,20 +256,22 @@ class Level1Scene extends Phaser.Scene {
     var type, texture, isGood;
 
     if (!lateGame) {
-      // Early: money 30, gold 18, star 10, note 17, bottle 15, syringe 10
-      if (roll < 30)       { type = 'money';      texture = 'item-money';      isGood = true; }
-      else if (roll < 48)  { type = 'goldrecord';  texture = 'item-goldrecord'; isGood = true; }
-      else if (roll < 58)  { type = 'star';        texture = 'item-star';       isGood = true; }
-      else if (roll < 75)  { type = 'note';        texture = 'item-note';       isGood = true; }
+      // Early: money 25, gold 16, star 10, note 18, doublenote 6, bottle 15, syringe 10
+      if (roll < 25)       { type = 'money';      texture = 'item-money';      isGood = true; }
+      else if (roll < 41)  { type = 'goldrecord';  texture = 'item-goldrecord'; isGood = true; }
+      else if (roll < 51)  { type = 'star';        texture = 'item-star';       isGood = true; }
+      else if (roll < 69)  { type = 'note';        texture = 'item-note';       isGood = true; }
+      else if (roll < 75)  { type = 'doublenote';  texture = 'item-doublenote'; isGood = true; }
       else if (roll < 90)  { type = 'bottle';      texture = 'item-bottle';     isGood = false; }
       else                 { type = 'syringe';     texture = 'item-syringe';    isGood = false; }
     } else {
-      // Late: money 25, gold 15, star 8, note 12, bottle 22, syringe 18
-      if (roll < 25)       { type = 'money';      texture = 'item-money';      isGood = true; }
-      else if (roll < 40)  { type = 'goldrecord';  texture = 'item-goldrecord'; isGood = true; }
-      else if (roll < 48)  { type = 'star';        texture = 'item-star';       isGood = true; }
-      else if (roll < 60)  { type = 'note';        texture = 'item-note';       isGood = true; }
-      else if (roll < 82)  { type = 'bottle';      texture = 'item-bottle';     isGood = false; }
+      // Late: money 22, gold 13, star 8, note 15, doublenote 5, bottle 22, syringe 15
+      if (roll < 22)       { type = 'money';      texture = 'item-money';      isGood = true; }
+      else if (roll < 35)  { type = 'goldrecord';  texture = 'item-goldrecord'; isGood = true; }
+      else if (roll < 43)  { type = 'star';        texture = 'item-star';       isGood = true; }
+      else if (roll < 58)  { type = 'note';        texture = 'item-note';       isGood = true; }
+      else if (roll < 63)  { type = 'doublenote';  texture = 'item-doublenote'; isGood = true; }
+      else if (roll < 85)  { type = 'bottle';      texture = 'item-bottle';     isGood = false; }
       else                 { type = 'syringe';     texture = 'item-syringe';    isGood = false; }
     }
 
@@ -310,7 +312,7 @@ class Level1Scene extends Phaser.Scene {
   collectGood(player, item) {
     if (this.gameOver) return;
 
-    var pointsMap = { money: 100, goldrecord: 250, star: 500, note: 50 };
+    var pointsMap = { money: 100, goldrecord: 250, star: 500, note: 50, doublenote: 150 };
     var points = pointsMap[item.itemType] || 100;
 
     this.localScore += points;
@@ -327,6 +329,20 @@ class Level1Scene extends Phaser.Scene {
         scaleX: 1.5,
         scaleY: 1.5,
         duration: 100,
+        yoyo: true,
+        ease: 'Quad.easeOut'
+      });
+    } else if (item.itemType === 'doublenote') {
+      this.notesCount += 3;
+      this.registry.set('notesCollected', this.registry.get('notesCollected') + 3);
+      this.notesText.setText('NOTES: ' + this.notesCount);
+
+      // Bigger pulse for double note
+      this.tweens.add({
+        targets: this.notesText,
+        scaleX: 2.0,
+        scaleY: 2.0,
+        duration: 120,
         yoyo: true,
         ease: 'Quad.easeOut'
       });
@@ -347,7 +363,7 @@ class Level1Scene extends Phaser.Scene {
     });
 
     // Floating points text
-    var colorMap = { money: '#00ff00', goldrecord: '#ffd700', star: '#ff66ff', note: '#9966ff' };
+    var colorMap = { money: '#00ff00', goldrecord: '#ffd700', star: '#ff66ff', note: '#9966ff', doublenote: '#FFD700' };
     var floatColor = colorMap[item.itemType] || '#ffff00';
     var floatText = this.add.text(item.x, item.y, '+' + points, {
       fontSize: '10px',
@@ -487,7 +503,7 @@ class Level1Scene extends Phaser.Scene {
         flash.destroy();
         self.registry.set('level1Score', self.localScore);
         self.controls.destroy();
-        self.scene.start('GameOverScene', { score: self.localScore });
+        self.scene.start('GameOverScene', { score: self.localScore, fromScene: 'Level1Scene' });
       }
     });
   }
@@ -517,8 +533,11 @@ class Level1Scene extends Phaser.Scene {
     // Victory pose
     this.player.setVelocity(0, 0);
 
-    // "LEVEL COMPLETE!" banner with punch-in animation
-    var banner = this.add.text(240, 110, 'LEVEL COMPLETE!', {
+    // Dark overlay for readability
+    this.add.rectangle(240, 135, 480, 270, 0x000000, 0.6).setDepth(199);
+
+    // "LEVEL 1 COMPLETE!" banner with punch-in animation
+    var banner = this.add.text(240, 80, 'LEVEL 1 COMPLETE!', {
       fontSize: '16px',
       fontFamily: 'monospace',
       color: '#ffff00',
@@ -535,7 +554,7 @@ class Level1Scene extends Phaser.Scene {
     });
 
     // Score summary
-    var summary = this.add.text(240, 140, 'SCORE: ' + this.localScore, {
+    var summary = this.add.text(240, 110, 'SCORE: ' + this.localScore, {
       fontSize: '10px',
       fontFamily: 'monospace',
       color: '#ffffff'
@@ -548,38 +567,50 @@ class Level1Scene extends Phaser.Scene {
       duration: 300
     });
 
-    // Notes collected summary
-    var notesSummary = this.add.text(240, 155, 'NOTES COLLECTED: ' + this.notesCount, {
-      fontSize: '9px',
+    // Notes collected — BIG and prominent
+    var notesSummary = this.add.text(240, 145, '\u266A NOTES: ' + this.notesCount, {
+      fontSize: '18px',
       fontFamily: 'monospace',
       color: '#cc88ff',
       stroke: '#000000',
-      strokeThickness: 2
-    }).setOrigin(0.5).setDepth(200).setAlpha(0);
+      strokeThickness: 3
+    }).setOrigin(0.5).setDepth(200).setAlpha(0).setScale(0.3);
 
     this.tweens.add({
       targets: notesSummary,
       alpha: 1,
-      delay: 900,
-      duration: 300
-    });
-
-    // Show vocalist portrait after summary
-    var portrait = this.add.image(240, 180, 'vocalist-portrait-2')
-      .setDepth(200).setAlpha(0).setScale(0.5);
-    this.tweens.add({
-      targets: portrait,
-      alpha: 1,
       scale: 1,
-      delay: 1200,
-      duration: 500,
+      delay: 900,
+      duration: 400,
       ease: 'Back.easeOut'
     });
 
+    // Click to continue prompt
     var self = this;
-    this.time.delayedCall(3500, function () {
-      self.controls.destroy();
-      self.scene.start('CutsceneScene', { cutscene: 'level1to2' });
+    this.time.delayedCall(1500, function () {
+      var continueText = self.add.text(240, 200, 'CLICK TO CONTINUE', {
+        fontSize: '8px',
+        fontFamily: 'monospace',
+        color: '#ffffff'
+      }).setOrigin(0.5).setDepth(200);
+
+      self.tweens.add({
+        targets: continueText,
+        alpha: { from: 1, to: 0.3 },
+        duration: 500,
+        yoyo: true,
+        repeat: -1
+      });
+
+      // Wait for input
+      var transition = function () {
+        self.input.off('pointerdown', transition);
+        self.input.keyboard.off('keydown', transition);
+        self.controls.destroy();
+        self.scene.start('CutsceneScene', { cutscene: 'level1to2' });
+      };
+      self.input.on('pointerdown', transition);
+      self.input.keyboard.on('keydown', transition);
     });
   }
 

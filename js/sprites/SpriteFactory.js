@@ -36,6 +36,7 @@ class SpriteFactory {
         SpriteFactory._createItemGoldRecord(scene);
         SpriteFactory._createItemStar(scene);
         SpriteFactory._createItemNote(scene);
+        SpriteFactory._createItemDoubleNote(scene);
         SpriteFactory._createItemBottle(scene);
         SpriteFactory._createItemSyringe(scene);
         SpriteFactory._createItemGuitar(scene);
@@ -1279,6 +1280,25 @@ class SpriteFactory {
         });
     }
 
+    static _createItemDoubleNote(scene) {
+        SpriteFactory._tex(scene, 'item-doublenote', 24, 24, function(g) {
+            // Two overlapping golden music notes
+            g.fillStyle(0xFFD700);
+            g.fillCircle(6, 18, 4);
+            g.lineStyle(2, 0xFFD700);
+            g.lineBetween(10, 18, 10, 4);
+            g.fillStyle(0xFFD700);
+            g.fillTriangle(10, 4, 16, 7, 10, 10);
+            // Second note offset
+            g.fillStyle(0xFFA500);
+            g.fillCircle(14, 16, 4);
+            g.lineStyle(2, 0xFFA500);
+            g.lineBetween(18, 16, 18, 2);
+            g.fillStyle(0xFFA500);
+            g.fillTriangle(18, 2, 24, 5, 18, 8);
+        });
+    }
+
     static _createItemBottle(scene) {
         var P = SpriteFactory.PAL;
         SpriteFactory._tex(scene, 'item-bottle', 24, 24, function(g) {
@@ -1390,9 +1410,6 @@ class SpriteFactory {
         SpriteFactory._tex(scene, 'dartboard', 128, 128, function(g) {
             var cx = 64, cy = 64;
 
-            g.fillStyle(0x5C3A1E);
-            g.fillRect(0, 0, 128, 128);
-
             g.fillStyle(P.black);
             g.fillCircle(cx, cy, 60);
 
@@ -1411,31 +1428,10 @@ class SpriteFactory {
                 g.lineBetween(cx, cy, x2, y2);
             }
 
-            g.fillStyle(P.skin);
-            g.fillCircle(cx, cy, 12);
-
-            g.lineStyle(2, P.black);
-            g.lineBetween(cx - 7, cy - 5, cx - 2, cy - 3);
-            g.lineBetween(cx + 7, cy - 5, cx + 2, cy - 3);
-
-            g.fillStyle(P.black);
-            g.fillCircle(cx - 4, cy - 1, 2);
-            g.fillCircle(cx + 4, cy - 1, 2);
-
-            g.lineStyle(2, P.black);
-            g.lineBetween(cx - 5, cy + 3, cx - 1, cy + 5);
-            g.lineBetween(cx + 5, cy + 3, cx + 1, cy + 5);
-
-            g.fillStyle(P.brownHair);
-            g.fillRect(cx - 8, cy - 12, 16, 5);
-            g.fillTriangle(cx - 6, cy - 12, cx - 3, cy - 17, cx, cy - 12);
-            g.fillTriangle(cx, cy - 12, cx + 3, cy - 17, cx + 6, cy - 12);
-
-            g.lineStyle(1, P.black);
-            g.lineBetween(cx - 3, cy + 7, cx + 3, cy + 7);
-
-            g.lineStyle(3, 0x3E2723);
-            g.strokeRect(1, 1, 126, 126);
+            g.fillStyle(0xCC2222);
+            g.fillCircle(cx, cy, 7);
+            g.fillStyle(P.white);
+            g.fillCircle(cx, cy, 3);
         });
     }
 

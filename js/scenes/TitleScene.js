@@ -21,27 +21,11 @@ class TitleScene extends Phaser.Scene {
         // the legacy and modern API gracefully.
         this._createBackgroundParticles();
 
-        // ---- Title text with shadow ----
-        this.add.text(240, 55, 'ROCKSTAR', {
-            fontSize: '36px',
-            fontFamily: 'monospace',
-            color: '#FFD700',
-            stroke: '#000000',
-            strokeThickness: 4,
-            shadow: { offsetX: 3, offsetY: 3, color: '#8B4513', blur: 0, fill: true }
-        }).setOrigin(0.5);
-
-        this.add.text(240, 90, 'REVENGE', {
-            fontSize: '36px',
-            fontFamily: 'monospace',
-            color: '#FFD700',
-            stroke: '#000000',
-            strokeThickness: 4,
-            shadow: { offsetX: 3, offsetY: 3, color: '#8B4513', blur: 0, fill: true }
-        }).setOrigin(0.5);
+        // ---- Title image ----
+        this.add.image(240, 75, 'game-name').setScale(0.085);
 
         // ---- Subtitle ----
-        this.add.text(240, 118, 'AN 80s ROCK STAR ARCADE GAME', {
+        this.add.text(240, 168, 'AN 80s ARCADE GAME', {
             fontSize: '10px',
             fontFamily: 'monospace',
             color: '#FFFFFF',
@@ -49,11 +33,11 @@ class TitleScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // ---- Rockstar sprite (floating idle) ----
-        var rockstar = this.add.image(240, 175, 'rockstar-idle');
-        rockstar.setScale(1.5);
+        var rockstar = this.add.image(240, 210, 'rockstar-idle');
+        rockstar.setScale(1.2);
         this.tweens.add({
             targets: rockstar,
-            y: 185,
+            y: 216,
             duration: 1200,
             yoyo: true,
             repeat: -1,
@@ -77,7 +61,7 @@ class TitleScene extends Phaser.Scene {
         });
 
         // ---- Credit line ----
-        this.add.text(240, 262, '2026 ROCK STAR PRODUCTIONS', {
+        this.add.text(240, 262, '2026 OLESIA PETROCHENKOVA', {
             fontSize: '7px',
             fontFamily: 'monospace',
             color: '#666666'

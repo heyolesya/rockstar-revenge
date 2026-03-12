@@ -70,9 +70,34 @@ class BootScene extends Phaser.Scene {
         this.load.image('vocalist-portrait-1', 'img/sprites/vocalist-portrait-1.png');
         this.load.image('vocalist-portrait-2', 'img/sprites/vocalist-portrait-2.png');
 
+        // Game name image (title screen)
+        this.load.image('game-name', 'img/pixel-transparent/game-name-2.png');
+
         // Level backdrops
         this.load.image('bg-bar',   'img/sprites/bar-backdrop.png');
         this.load.image('bg-alley', 'img/sprites/alley-backdrop.png');
+
+        // Vocalist 90s spritesheet (transformed hero for WinScene)
+        this.load.spritesheet('vocalist-90s', 'img/pixel-transparent/vocalist-90s.png', {
+            frameWidth: 409,
+            frameHeight: 1024
+        });
+
+        // Hi-res individual character images for end scenes
+        this.load.image('vocalist-hires', 'img/pixel-transparent/vocalist-hurt.png');
+        this.load.image('fallen-hero', 'img/pixel-transparent/fallen-hero-cropped.png');
+        this.load.image('vocalist-90s-fist', 'img/pixel-transparent/vocalist-90s-fist.png');
+        this.load.image('vocalist-hires-idle', 'img/pixel-transparent/vocalist-hires-idle.png');
+        this.load.image('vocalist-hires-walk-1', 'img/pixel-transparent/vocalist-hires-walk-1.png');
+        this.load.image('vocalist-hires-walk-2', 'img/pixel-transparent/vocalist-hires-walk-2.png');
+        this.load.image('vocalist-hires-walk-3', 'img/pixel-transparent/vocalist-hires-walk-3.png');
+        this.load.image('grunge-hires-1', 'img/pixel-transparent/grunge-char-1.png');
+        this.load.image('grunge-hires-2', 'img/pixel-transparent/grunge-char-2.png');
+        this.load.image('grunge-hires-3', 'img/pixel-transparent/grunge-char-3.png');
+
+        // End screen backdrops
+        this.load.image('bg-happy-end', 'img/pixel/happy-end-backdrop.png');
+        this.load.image('bg-unhappy-end', 'img/pixel/unhappy-backdrop.png');
     }
 
     create() {

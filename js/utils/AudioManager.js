@@ -397,7 +397,7 @@ class AudioManager {
     this._playMusicFile('music/Level%203_Grunge%20Will%20Kill%20Us%20All%20.wav', 0.4);
   }
 
-  playWinMusic() {
+  playWinMusicChiptune() {
     // Triumphant ascending melody
     var pattern = [
       { freq: 523, type: 'square' },
@@ -420,7 +420,7 @@ class AudioManager {
     this._startSequencer(pattern, 150, 0.12);
   }
 
-  playLoseMusic() {
+  playLoseMusicChiptune() {
     // Somber slow descending melody
     var pattern = [
       { freq: 392, type: 'triangle', duration: 0.4 },
@@ -441,5 +441,17 @@ class AudioManager {
       { freq: 0 }
     ];
     this._startSequencer(pattern, 80, 0.1);
+  }
+
+  playHappyEndMusic() {
+    this._playMusicFile('music/Happy-end_Pixel%20Hair%20Hero.wav', 0.4);
+  }
+
+  playUnhappyEndMusic() {
+    this._playMusicFile('music/Unhsppy-end_Pixel%20Poison%20Glory.wav', 0.4);
+  }
+
+  playGameOverMusic() {
+    this._playMusicFile('music/Game%20Over%20Glam.wav', 0.4);
   }
 }

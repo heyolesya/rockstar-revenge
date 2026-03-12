@@ -107,8 +107,9 @@ class CutsceneScene extends Phaser.Scene {
     if (this.tapPromptShown) return;
     this.tapPromptShown = true;
 
-    this.tapText = this.add.text(240, 250, 'TAP TO CONTINUE', {
-      fontFamily: 'monospace', fontSize: '8px', color: '#888888'
+    this.tapText = this.add.text(240, 250, 'CLICK TO CONTINUE', {
+      fontFamily: 'monospace', fontSize: '8px', color: '#ffffff',
+      stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5).setDepth(100);
 
     // Blink
@@ -237,7 +238,7 @@ class CutsceneScene extends Phaser.Scene {
     var notesCollected = this.registry.get('notesCollected') || 0;
 
     // "LEVEL 1 COMPLETE" in yellow, large
-    var titleText = this.add.text(240, 50, 'LEVEL 1 COMPLETE', {
+    var titleText = this.add.text(240, 30, 'LEVEL 1 COMPLETE', {
       fontFamily: 'monospace', fontSize: '14px', color: '#ffcc00',
       stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5).setAlpha(0);
@@ -250,34 +251,43 @@ class CutsceneScene extends Phaser.Scene {
 
     // Score tally
     this.time.delayedCall(800, function () {
-      self.add.text(240, 80, 'SCORE: ' + l1Score, {
+      self.add.text(240, 55, 'SCORE: ' + l1Score, {
         fontFamily: 'monospace', fontSize: '10px', color: '#ffffff'
       }).setOrigin(0.5);
     });
 
-    // Notes collected (subtle purple)
+    // Notes collected — prominent
     this.time.delayedCall(1200, function () {
-      self.add.text(240, 96, 'Notes collected: ' + notesCollected, {
-        fontFamily: 'monospace', fontSize: '7px', color: '#aa66cc'
-      }).setOrigin(0.5);
+      var notesText = self.add.text(240, 78, '\u266A NOTES: ' + notesCollected, {
+        fontFamily: 'monospace', fontSize: '14px', color: '#cc88ff',
+        stroke: '#000000', strokeThickness: 2
+      }).setOrigin(0.5).setAlpha(0).setScale(0.3);
+
+      self.tweens.add({
+        targets: notesText,
+        alpha: 1,
+        scale: 1,
+        duration: 400,
+        ease: 'Back.easeOut'
+      });
     });
 
-    // Narrative typewriter text
+    // Narrative typewriter text — above hero
     this.time.delayedCall(2000, function () {
-      self.typewriterText(240, 130, 'The crowd loves you.', {
+      self.typewriterText(240, 105, 'The crowd loves you.', {
         fontFamily: 'monospace', fontSize: '9px', color: '#cccccc',
         align: 'center', wordWrap: { width: 400 }
       });
     });
 
     this.time.delayedCall(3500, function () {
-      self.typewriterText(240, 148, 'But not everyone is a fan...', {
+      self.typewriterText(240, 120, 'But not everyone is a fan...', {
         fontFamily: 'monospace', fontSize: '9px', color: '#cccccc',
         align: 'center', wordWrap: { width: 400 }
       });
     });
 
-    // Vocalist portrait
+    // Vocalist portrait — bottom half, clearly below text
     this.time.delayedCall(3000, function () {
       var portrait = self.add.image(240, 200, 'vocalist-portrait-2').setAlpha(0).setScale(0.6);
       self.tweens.add({

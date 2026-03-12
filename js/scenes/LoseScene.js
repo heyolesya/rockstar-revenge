@@ -7,189 +7,61 @@ class LoseScene extends Phaser.Scene {
   create() {
     // --- Music ---
     if (window.audioManager) {
-      window.audioManager.playLoseMusic();
+      window.audioManager.playUnhappyEndMusic();
     }
 
-    // --- Dark alley background ---
-    this.add.rectangle(240, 135, 480, 270, 0x0a0a12);
+    // --- Unhappy alley backdrop ---
+    var backdrop = this.add.image(240, 135, 'bg-unhappy-end');
+    backdrop.setDisplaySize(480, 270).setDepth(0);
 
-    // --- Fallen rockstar ---
-    this.rockstar = this.add.sprite(200, 220, 'rockstar-hurt')
-      .setAngle(12).setDepth(20);
+    // --- Grunge guys in the back (behind hero) ---
+    this.grungeCrouch = this.add.image(260, 140, 'grunge-hires-2')
+      .setFlipX(true).setScale(0.13).setDepth(5);
+    var grungeLeft = this.add.image(190, 155, 'grunge-hires-1')
+      .setFlipX(false).setScale(0.14).setDepth(6);
+    var grungeRight = this.add.image(330, 158, 'grunge-hires-3')
+      .setFlipX(true).setScale(0.14).setDepth(6);
 
-    // --- Grunge enemies standing around ---
-    var grungePositions = [
-      { x: 140, flipX: false },
-      { x: 260, flipX: true },
-      { x: 320, flipX: true }
-    ];
+    // --- Fallen rockstar in the puddle (front, on top) ---
+    this.rockstar = this.add.image(240, 195, 'fallen-hero')
+      .setScale(0.1).setDepth(15);
 
-    this.grunges = [];
-    for (var i = 0; i < grungePositions.length; i++) {
-      var g = this.add.sprite(grungePositions[i].x, 200, 'grunge-idle')
-        .setFlipX(grungePositions[i].flipX).setDepth(15);
-      this.grunges.push(g);
-    }
+    this.grunges = [grungeLeft, this.grungeCrouch, grungeRight];
 
-    // --- After 2 seconds: fade to black ---
+    // --- After 3 seconds: fade to text crawl ---
     var self = this;
-    this.time.delayedCall(2000, function () {
-      self.fadeToOffice();
+    this.time.delayedCall(3000, function () {
+      self.fadeToTextCrawl();
     });
   }
 
   // =============================================
-  //   FADE TO OFFICE SEQUENCE
+  //   FADE TO TEXT CRAWL
   // =============================================
 
-  fadeToOffice() {
+  fadeToTextCrawl() {
     var self = this;
-    var fadeOverlay = this.add.rectangle(240, 135, 480, 270, 0x000000, 0).setDepth(500);
+
+    // Dim overlay for text readability
+    var dimOverlay = this.add.rectangle(240, 135, 480, 270, 0x000000, 0).setDepth(50);
 
     this.tweens.add({
-      targets: fadeOverlay,
-      alpha: 1,
+      targets: dimOverlay,
+      alpha: 0.6,
       duration: 1500,
       onComplete: function () {
-        // Destroy alley elements
-        self.rockstar.destroy();
-        for (var i = 0; i < self.grunges.length; i++) {
-          self.grunges[i].destroy();
-        }
-        self.grunges = [];
-
-        // Build office scene behind the black overlay
-        self.buildOfficeScene();
-
-        // Fade the overlay back out to reveal the office
+        // Fade out characters
         self.tweens.add({
-          targets: fadeOverlay,
+          targets: [self.rockstar].concat(self.grunges),
           alpha: 0,
-          duration: 800,
-          onComplete: function () {
-            fadeOverlay.destroy();
-            // Start the stamp animation
-            self.time.delayedCall(500, function () {
-              self.playStampAnimation();
-            });
-          }
+          duration: 500
         });
-      }
-    });
-  }
 
-  // =============================================
-  //   OFFICE SCENE
-  // =============================================
-
-  buildOfficeScene() {
-    // Office background - dark walls
-    this.add.rectangle(240, 135, 480, 270, 0x2a1f14).setDepth(0);
-
-    // Wall upper section
-    this.add.rectangle(240, 80, 480, 160, 0x3d2e1f).setDepth(1);
-
-    // Desk - brown rectangle filling lower portion
-    this.add.rectangle(240, 230, 480, 80, 0x5c3a1e).setDepth(10);
-
-    // Desk edge highlight
-    this.add.rectangle(240, 191, 480, 3, 0x7a5232).setDepth(11);
-
-    // Paper on desk
-    this.add.rectangle(240, 220, 50, 65, 0xeeeecc).setDepth(12);
-
-    // Lines on paper
-    for (var i = 0; i < 5; i++) {
-      this.add.rectangle(240, 200 + i * 8, 36, 1, 0xccccaa).setDepth(13);
-    }
-
-    // --- Gold records on wall ---
-    this.goldRecords = [];
-    var recordPositions = [120, 240, 360];
-    for (var j = 0; j < 3; j++) {
-      var record = this.add.circle(recordPositions[j], 60, 12, 0xdaa520).setDepth(5);
-      // Inner ring
-      this.add.circle(recordPositions[j], 60, 5, 0xb8860b).setDepth(6);
-      this.goldRecords.push(record);
-    }
-  }
-
-  // =============================================
-  //   CONTRACT TERMINATED STAMP
-  // =============================================
-
-  playStampAnimation() {
-    var self = this;
-
-    // "CONTRACT TERMINATED" slams down from above
-    var stampText = this.add.text(240, -60, 'CONTRACT\nTERMINATED', {
-      fontFamily: 'monospace', fontSize: '16px', color: '#cc0000',
-      align: 'center', stroke: '#000000', strokeThickness: 1
-    }).setOrigin(0.5).setDepth(100).setScale(3);
-
-    this.tweens.add({
-      targets: stampText,
-      y: 130,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 300,
-      ease: 'Bounce.easeOut',
-      onComplete: function () {
-        // Camera shake on impact
-        self.cameras.main.shake(200, 0.02);
-
-        if (window.audioManager) {
-          window.audioManager.playPunch();
-        }
-
-        // Crack and drop gold records
         self.time.delayedCall(600, function () {
-          self.crackGoldRecords();
-        });
-
-        // Start text crawl after records fall
-        self.time.delayedCall(2500, function () {
           self.playTextCrawl();
         });
       }
     });
-  }
-
-  // =============================================
-  //   GOLD RECORDS CRACKING
-  // =============================================
-
-  crackGoldRecords() {
-    var self = this;
-    var recordPositions = [120, 240, 360];
-
-    for (var i = 0; i < this.goldRecords.length; i++) {
-      var record = this.goldRecords[i];
-      var rx = recordPositions[i];
-
-      // Add crack line across the record
-      var crack = this.add.rectangle(rx, 60, 20, 2, 0x000000)
-        .setAngle(-30 + i * 30).setDepth(7);
-
-      // Records fall after crack appears (staggered)
-      (function (rec, crk, idx) {
-        self.time.delayedCall(300 * idx, function () {
-          // Crack sound
-          if (window.audioManager) {
-            window.audioManager.playBottleSmash();
-          }
-
-          self.tweens.add({
-            targets: [rec, crk],
-            y: 300,
-            alpha: 0,
-            duration: 800,
-            ease: 'Quad.easeIn',
-            delay: 200
-          });
-        });
-      })(record, crack, i);
-    }
   }
 
   // =============================================
@@ -200,7 +72,8 @@ class LoseScene extends Phaser.Scene {
     var self = this;
     var crawlStyle = {
       fontFamily: 'monospace', fontSize: '8px', color: '#cccccc',
-      align: 'center', wordWrap: { width: 400 }
+      align: 'center', wordWrap: { width: 400 },
+      stroke: '#000000', strokeThickness: 2
     };
 
     var lines = [
@@ -211,10 +84,13 @@ class LoseScene extends Phaser.Scene {
       { text: 'the end of the story?', delay: 7400 }
     ];
 
+    // Store story text objects for cleanup
+    this.storyTexts = [];
     for (var i = 0; i < lines.length; i++) {
       (function (line, index) {
         self.time.delayedCall(line.delay, function () {
-          self.typewriterText(240, 160 + index * 14, line.text, crawlStyle);
+          var t = self.typewriterText(240, 80 + index * 18, line.text, crawlStyle);
+          self.storyTexts.push(t);
         });
       })(lines[i], i);
     }
@@ -222,46 +98,77 @@ class LoseScene extends Phaser.Scene {
     // Final score
     var totalScore = this.registry.get('score') || 0;
     this.time.delayedCall(9500, function () {
-      var scoreText = self.add.text(240, 232, 'FINAL SCORE: ' + totalScore, {
+      self.finalScoreText = self.add.text(240, 200, 'FINAL SCORE: ' + totalScore, {
         fontFamily: 'monospace', fontSize: '10px', color: '#ffcc00',
         stroke: '#000000', strokeThickness: 2
       }).setOrigin(0.5).setAlpha(0).setDepth(200);
 
       self.tweens.add({
-        targets: scoreText,
+        targets: self.finalScoreText,
         alpha: 1,
         duration: 800
       });
     });
 
-    // Buttons
-    this.time.delayedCall(11000, function () {
+    // Leaderboard entry, then buttons
+    self.time.delayedCall(10500, function() {
+      // Hide story text and final score to make room
+      for (var k = 0; k < self.storyTexts.length; k++) {
+        self.storyTexts[k].setAlpha(0);
+      }
+      if (self.finalScoreText) self.finalScoreText.setAlpha(0);
+
+      // Dark overlay for leaderboard readability
+      self.add.rectangle(240, 135, 480, 270, 0x000000, 0.7).setDepth(190);
+
+      var totalScore2 = self.registry.get('score') || 0;
+      self.entryUI = Leaderboard.createEntryUI(self, 160, totalScore2, function(initials) {
+        Leaderboard.addScore(initials, totalScore2);
+        if (self.entryUI) self.entryUI.destroy();
+        Leaderboard.createDisplayUI(self, 100);
+      });
+
+      // PLAY AGAIN + CTA shown during initials entry
       self.showButtons();
+      self.createCTAButton();
     });
   }
 
   // =============================================
-  //   CTA BUTTONS
+  //   CTA BUTTON (shown during initials entry)
   // =============================================
 
-  showButtons() {
+  createCTAButton() {
     var self = this;
 
-    // "FIND OUT WHAT REALLY HAPPENED" button
-    var ctaBg = this.add.rectangle(240, 248, 220, 18, 0xffcc00)
+    var ctaBg = this.add.rectangle(240, 248, 200, 18, 0xFF1493)
       .setInteractive({ useHandCursor: true }).setDepth(300);
-    this.add.text(240, 248, 'FIND OUT WHAT REALLY HAPPENED', {
-      fontFamily: 'monospace', fontSize: '6px', color: '#000000'
+    this.add.text(240, 248, 'WATCH THE REAL STORY', {
+      fontFamily: 'monospace', fontSize: '7px', color: '#ffffff'
     }).setOrigin(0.5).setDepth(301);
 
-    ctaBg.on('pointerover', function () { ctaBg.setFillStyle(0xffdd44); });
-    ctaBg.on('pointerout', function () { ctaBg.setFillStyle(0xffcc00); });
+    // Blinking shimmer
+    self.tweens.add({
+      targets: ctaBg,
+      alpha: { from: 1, to: 0.4 },
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    ctaBg.on('pointerover', function () { ctaBg.setFillStyle(0xFF69B4); });
+    ctaBg.on('pointerout', function () { ctaBg.setFillStyle(0xFF1493); });
     ctaBg.on('pointerdown', function () {
       if (window.audioManager) window.audioManager.playMenuSelect();
       window.open('https://example.com/documentary', '_blank');
     });
+  }
 
-    // "PLAY AGAIN" button
+  showButtons() {
+    var self = this;
+
+    // "PLAY AGAIN" button only
     var replayBg = this.add.rectangle(240, 264, 100, 14, 0x444444)
       .setInteractive({ useHandCursor: true }).setDepth(300);
     this.add.text(240, 264, 'PLAY AGAIN', {

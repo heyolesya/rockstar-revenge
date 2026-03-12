@@ -15,7 +15,7 @@ class Level2Scene extends Phaser.Scene {
     this.localScore = 0;
     this.levelDone = false;
     this.MAX_DARTS = 10;
-    this.thrownDarts = []; // store refs so they persist visually
+    this.thrownDarts = [];
 
     // ------------------------------------------------------------------
     // Background
@@ -31,10 +31,15 @@ class Level2Scene extends Phaser.Scene {
     this.dartboard = this.add.sprite(240, 120, 'dartboard');
     this.dartboard.setDepth(2);
 
-    // Pin Ulrich face to dartboard center
+    // Pin Ulrich face to dartboard center (surprise reveal!)
     this.ulrichFace = this.add.image(240, 120, 'ulrich-face');
-    this.ulrichFace.setDepth(3); // above dartboard (depth 2)
-    this.ulrichFace.setScale(0.6); // cover ~50% of dartboard
+    this.ulrichFace.setDepth(3);
+    this.ulrichFace.setScale(0.5);
+
+    // Circle mask so the square image fits the round dartboard
+    this.faceMaskGfx = this.make.graphics();
+    this.faceMaskGfx.fillCircle(240, 120, 30);
+    this.ulrichFace.setMask(this.faceMaskGfx.createGeometryMask());
 
     // Dartboard movement tweens — horizontal sway
     this.tweens.add({
@@ -297,8 +302,15 @@ class Level2Scene extends Phaser.Scene {
       onComplete: function () { floatText.destroy(); }
     });
 
-    // Keep the dart stuck where it landed (don't destroy)
-    this.thrownDarts.push(dart);
+    // Fade out and destroy the dart after landing
+    var self2 = this;
+    this.tweens.add({
+      targets: dart,
+      alpha: 0,
+      duration: 400,
+      delay: 200,
+      onComplete: function () { dart.destroy(); }
+    });
 
     // Clear cooldown after a short pause
     var self = this;
@@ -377,11 +389,31 @@ class Level2Scene extends Phaser.Scene {
       });
     }
 
-    // Transition after delay
+    // Click to continue prompt
     var self = this;
-    this.time.delayedCall(3000, function () {
-      self.controls.destroy();
-      self.scene.start('CutsceneScene', { cutscene: 'level2to3' });
+    this.time.delayedCall(1500, function () {
+      var continueText = self.add.text(240, 200, 'CLICK TO CONTINUE', {
+        fontSize: '8px',
+        fontFamily: 'monospace',
+        color: '#ffffff'
+      }).setOrigin(0.5).setDepth(200);
+
+      self.tweens.add({
+        targets: continueText,
+        alpha: { from: 1, to: 0.3 },
+        duration: 500,
+        yoyo: true,
+        repeat: -1
+      });
+
+      var transition = function () {
+        self.input.off('pointerdown', transition);
+        self.input.keyboard.off('keydown', transition);
+        self.controls.destroy();
+        self.scene.start('CutsceneScene', { cutscene: 'level2to3' });
+      };
+      self.input.on('pointerdown', transition);
+      self.input.keyboard.on('keydown', transition);
     });
   }
 
@@ -406,10 +438,14 @@ class Level2Scene extends Phaser.Scene {
       this.crosshair.setScale(pulse);
     }
 
-    // Ulrich face follows dartboard position
+    // Ulrich face and mask follow dartboard position
     if (this.ulrichFace) {
       this.ulrichFace.x = this.dartboard.x;
       this.ulrichFace.y = this.dartboard.y;
+      if (this.faceMaskGfx) {
+        this.faceMaskGfx.clear();
+        this.faceMaskGfx.fillCircle(this.dartboard.x, this.dartboard.y, 30);
+      }
     }
   }
 }

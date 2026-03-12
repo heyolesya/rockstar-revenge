@@ -49,8 +49,8 @@ class Level3Scene extends Phaser.Scene {
     // ------------------------------------------------------------------
     // Grunge guys sitting at the sides (depth 3)
     // ------------------------------------------------------------------
-    this.add.image(30, 195, 'grunge-sitting').setDepth(3);
-    this.add.image(450, 195, 'grunge-sitting').setDepth(3).setFlipX(true);
+    this.sittingGrungeLeft = this.add.image(30, 195, 'grunge-sitting').setDepth(3).setScale(1.35);
+    this.sittingGrungeRight = this.add.image(450, 195, 'grunge-sitting').setDepth(3).setFlipX(true).setScale(1.35);
 
     // ------------------------------------------------------------------
     // Rain particle system — enhanced with wind angle and more particles
@@ -108,17 +108,16 @@ class Level3Scene extends Phaser.Scene {
 
     // --- Groups ---
     this.enemies = this.physics.add.group();
-    this.pickups = this.physics.add.group();
     this.projectiles = this.physics.add.group();
 
     // --- Overlaps ---
-    this.physics.add.overlap(this.player, this.pickups, this.collectPickup, null, this);
     this.physics.add.overlap(this.projectiles, this.player, this.projectileHitPlayer, null, this);
 
     // --- Wave system ---
     this.waves = [
       { count: 2, sides: ['right', 'right'] },
       { count: 3, sides: ['left', 'right', 'left'] },
+      { count: 3, sides: ['right', 'left', 'right'] },
       { count: 4, sides: ['right', 'left', 'right', 'left'] }
     ];
     this.currentWave = 0;
@@ -127,17 +126,9 @@ class Level3Scene extends Phaser.Scene {
     this.waveInProgress = false;
     this.waveTransition = false;
 
-    // --- Player weapon state ---
-    this.hasGuitar = false;
-    this.guitarHitsLeft = 0;
-
     // --- Attack cooldown ---
     this.canAttack = true;
     this.attackCooldown = 300;
-
-    // --- Golden power ---
-    this.hasPower = false;
-    this.powerChecked = false;
 
     // --- Invulnerability ---
     this.isInvulnerable = false;
@@ -221,14 +212,10 @@ class Level3Scene extends Phaser.Scene {
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(900);
 
     // Wave indicator
-    this.hudWave = this.add.text(240, 8, 'WAVE 1/3', {
+    this.hudWave = this.add.text(240, 8, 'WAVE 1/4', {
       fontFamily: 'monospace', fontSize: '8px', color: '#ffffff'
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(900);
 
-    // Weapon indicator
-    this.hudWeapon = this.add.text(8, 24, 'MIC STAND', {
-      fontFamily: 'monospace', fontSize: '6px', color: '#aaaaaa'
-    }).setOrigin(0, 0).setScrollFactor(0).setDepth(900);
   }
 
   updateHealthBar() {
@@ -247,13 +234,6 @@ class Level3Scene extends Phaser.Scene {
   updateHUD() {
     this.hudScore.setText('SCORE: ' + this.score);
     this.hudWave.setText('WAVE ' + (this.currentWave + 1) + '/' + this.waves.length);
-    if (this.hasGuitar) {
-      this.hudWeapon.setText('GUITAR (' + this.guitarHitsLeft + ')');
-      this.hudWeapon.setColor('#ffcc00');
-    } else {
-      this.hudWeapon.setText('MIC STAND');
-      this.hudWeapon.setColor('#aaaaaa');
-    }
     this.updateHealthBar();
   }
 
@@ -345,12 +325,61 @@ class Level3Scene extends Phaser.Scene {
         });
       })(i);
     }
+
+    // Wave 4 (index 3): sitting grunge guys jump into the fight
+    if (waveIndex === 3) {
+      this.time.delayedCall(1200, function () {
+        if (self.gameOver) return;
+
+        // Animate sitting grunge sprites away
+        if (self.sittingGrungeLeft && self.sittingGrungeLeft.active) {
+          self.tweens.add({
+            targets: self.sittingGrungeLeft,
+            scaleX: 0,
+            scaleY: 0,
+            alpha: 0,
+            duration: 300,
+            ease: 'Back.easeIn',
+            onComplete: function () {
+              if (self.sittingGrungeLeft) {
+                self.sittingGrungeLeft.destroy();
+                self.sittingGrungeLeft = null;
+              }
+            }
+          });
+        }
+
+        if (self.sittingGrungeRight && self.sittingGrungeRight.active) {
+          self.tweens.add({
+            targets: self.sittingGrungeRight,
+            scaleX: 0,
+            scaleY: 0,
+            alpha: 0,
+            duration: 300,
+            ease: 'Back.easeIn',
+            onComplete: function () {
+              if (self.sittingGrungeRight) {
+                self.sittingGrungeRight.destroy();
+                self.sittingGrungeRight = null;
+              }
+            }
+          });
+        }
+
+        // Spawn 2 extra Beavis/Butt-Head enemies from the sitting positions
+        self.spawnEnemy('left', waveIndex);
+        self.spawnEnemy('right', waveIndex);
+        self.activeEnemies += 2;
+      });
+    }
   }
 
   showWaveAnnouncement(waveNum) {
     // Dramatic slam-in wave announcement with screen shake
-    var txt = this.add.text(240, 100, 'WAVE ' + waveNum, {
-      fontFamily: 'monospace', fontSize: '24px', color: '#ff4444',
+    var label = (waveNum <= 3) ? 'WAVE ' + waveNum + ' - GRUNGE STRIKES' : 'MTV HITS HARD!';
+    var color = (waveNum <= 3) ? '#ff4444' : '#ffcc00';
+    var txt = this.add.text(240, 100, label, {
+      fontFamily: 'monospace', fontSize: waveNum <= 3 ? '16px' : '18px', color: color,
       stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5).setAlpha(0).setDepth(800).setScale(3);
 
@@ -386,8 +415,16 @@ class Level3Scene extends Phaser.Scene {
     var startX = (side === 'left') ? -30 : 510;
     var startY = Phaser.Math.Between(180, 230);
 
-    var enemyTypes = ['grunge', 'beavis', 'butthead'];
-    var enemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+    // Waves 1-3: mostly grunge, wave 4: only Beavis & Butt-Head
+    var enemyType;
+    if (waveIndex <= 2) {
+      // 70% grunge, 15% beavis, 15% butthead
+      var roll = Phaser.Math.Between(1, 100);
+      enemyType = (roll <= 70) ? 'grunge' : (roll <= 85) ? 'beavis' : 'butthead';
+    } else {
+      // Wave 4: only Beavis & Butt-Head
+      enemyType = Phaser.Math.Between(0, 1) === 0 ? 'beavis' : 'butthead';
+    }
     var enemy = this.physics.add.sprite(startX, startY, enemyType + '-idle');
     enemy.body.setSize(
       Math.floor(enemy.width * 0.6),
@@ -395,11 +432,10 @@ class Level3Scene extends Phaser.Scene {
     );
     enemy.setDepth(10);
 
-    var isHardWave = (waveIndex >= 3 && !this.hasPower);
     enemy.customData = {
       type: enemyType,
-      hp: isHardWave ? 4 : 3,
-      maxHp: isHardWave ? 4 : 3,
+      hp: 3,
+      maxHp: 3,
       facing: (side === 'left') ? 1 : -1,
       state: 'entering',    // Start with entrance state
       attackTimer: 0,
@@ -407,7 +443,7 @@ class Level3Scene extends Phaser.Scene {
       hurtTimer: 0,
       walkFrame: 0,
       walkTimer: 0,
-      speedMultiplier: this.hasPower ? 0.6 : 1.0,
+      speedMultiplier: 1.0,
       enterTargetX: (side === 'left') ? Phaser.Math.Between(40, 180) : Phaser.Math.Between(300, 440)
     };
 
@@ -423,187 +459,6 @@ class Level3Scene extends Phaser.Scene {
     }
 
     this.enemies.add(enemy);
-  }
-
-  // =============================================
-  //   NOTES MECHANIC (after wave 3)
-  // =============================================
-
-  checkNotesMechanic() {
-    if (this.powerChecked) return;
-    this.powerChecked = true;
-
-    // Show notes count dramatically
-    var notesColor = (this.notesCollected >= 15) ? '#33ff33' : '#ff3333';
-    var notesStatusText = this.add.text(240, 70, 'MUSICAL NOTES: ' + this.notesCollected + '/15', {
-      fontFamily: 'monospace', fontSize: '12px', color: notesColor,
-      stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5).setDepth(850).setScale(2).setAlpha(0);
-
-    // Slam-in animation
-    this.tweens.add({
-      targets: notesStatusText,
-      alpha: 1,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 400,
-      ease: 'Back.easeOut'
-    });
-
-    // Screen shake for dramatic effect
-    this.cameras.main.shake(200, 0.01);
-
-    var self = this;
-    this.time.delayedCall(2000, function () {
-      self.tweens.add({
-        targets: notesStatusText,
-        alpha: 0,
-        duration: 500,
-        onComplete: function () { notesStatusText.destroy(); }
-      });
-    });
-
-    if (this.notesCollected >= 15) {
-      this.time.delayedCall(500, function () {
-        self.activateGoldenPower();
-      });
-    }
-
-    // Spawn guitar pickup between waves
-    this.spawnGuitarPickup(240, 210);
-  }
-
-  activateGoldenPower() {
-    this.hasPower = true;
-
-    // Flash screen gold
-    var flash = this.add.rectangle(240, 135, 480, 270, 0xffdd00, 0.5).setDepth(700);
-    this.tweens.add({
-      targets: flash,
-      alpha: 0,
-      duration: 1000,
-      onComplete: function () { flash.destroy(); }
-    });
-
-    // Spark emitter following player
-    this.powerEmitter = this.add.particles(0, 0, 'particle-spark', {
-      follow: this.player,
-      speed: { min: 20, max: 60 },
-      lifespan: 600,
-      frequency: 80,
-      quantity: 1,
-      scale: { start: 1, end: 0 },
-      tint: [0xffdd00, 0xffaa00, 0xffffff],
-      blendMode: 'ADD'
-    });
-
-    // Power text
-    var powerText = this.add.text(240, 80, 'THE POWER OF MUSIC!', {
-      fontFamily: 'monospace', fontSize: '12px', color: '#ffdd00',
-      stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5).setDepth(800);
-
-    this.tweens.add({
-      targets: powerText,
-      alpha: 0,
-      y: 60,
-      delay: 2000,
-      duration: 500,
-      onComplete: function () { powerText.destroy(); }
-    });
-
-    // Slow existing enemies
-    var children = this.enemies.getChildren();
-    for (var i = 0; i < children.length; i++) {
-      if (children[i].active && children[i].customData) {
-        children[i].customData.speedMultiplier = 0.6;
-      }
-    }
-
-    if (window.audioManager) {
-      window.audioManager.playCrowdCheer();
-    }
-  }
-
-  // =============================================
-  //   PICKUPS
-  // =============================================
-
-  spawnGuitarPickup(x, y) {
-    var pickup = this.physics.add.sprite(x, y, 'item-guitar');
-    pickup.setDepth(10);
-    this.pickups.add(pickup);
-
-    // Bobbing
-    this.tweens.add({
-      targets: pickup,
-      y: y - 6,
-      duration: 600,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-
-    // Glow pulse — pulsing yellow circle behind the pickup
-    var glow = this.add.circle(x, y, 14, 0xffdd00, 0.3).setDepth(9);
-    this.tweens.add({
-      targets: glow,
-      alpha: { from: 0.1, to: 0.5 },
-      scaleX: { from: 0.8, to: 1.3 },
-      scaleY: { from: 0.8, to: 1.3 },
-      duration: 400,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-    // Also bob the glow with the pickup
-    this.tweens.add({
-      targets: glow,
-      y: y - 6,
-      duration: 600,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
-    pickup.glowCircle = glow;
-
-    // Alpha pulse on pickup itself
-    this.tweens.add({
-      targets: pickup,
-      alpha: { from: 0.7, to: 1 },
-      duration: 400,
-      yoyo: true,
-      repeat: -1
-    });
-  }
-
-  collectPickup(player, pickup) {
-    // Destroy glow circle if it exists
-    if (pickup.glowCircle) {
-      pickup.glowCircle.destroy();
-    }
-    pickup.destroy();
-    this.hasGuitar = true;
-    this.guitarHitsLeft = 5;
-
-    if (window.audioManager) {
-      window.audioManager.playCoinCollect();
-    }
-
-    var txt = this.add.text(player.x, player.y - 20, 'GUITAR!', {
-      fontFamily: 'monospace', fontSize: '8px', color: '#ffcc00',
-      stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0.5).setDepth(800);
-
-    this.tweens.add({
-      targets: txt,
-      y: txt.y - 20,
-      alpha: 0,
-      duration: 800,
-      onComplete: function () { txt.destroy(); }
-    });
-
-    this.updateHUD();
   }
 
   // =============================================
@@ -635,11 +490,8 @@ class Level3Scene extends Phaser.Scene {
     });
 
     // Calculate hit range and damage
-    var range = this.hasGuitar ? 60 : 40;
-    var damage = this.hasGuitar ? 2 : 1;
-    if (this.hasPower) {
-      range = Math.floor(range * 1.5);
-    }
+    var range = 40;
+    var damage = 1;
 
     if (window.audioManager) {
       window.audioManager.playPunch();
@@ -667,32 +519,6 @@ class Level3Scene extends Phaser.Scene {
     if (hitAny) {
       this.cameras.main.shake(80, 0.008);
       this.incrementCombo();
-    }
-
-    // Guitar durability
-    if (this.hasGuitar) {
-      this.guitarHitsLeft--;
-      if (this.guitarHitsLeft <= 0) {
-        this.hasGuitar = false;
-
-        if (window.audioManager) {
-          window.audioManager.playBottleSmash();
-        }
-
-        var brokeTxt = this.add.text(this.player.x, this.player.y - 30, 'GUITAR BROKE!', {
-          fontFamily: 'monospace', fontSize: '7px', color: '#ff6666',
-          stroke: '#000000', strokeThickness: 2
-        }).setOrigin(0.5).setDepth(800);
-
-        this.tweens.add({
-          targets: brokeTxt,
-          y: brokeTxt.y - 16,
-          alpha: 0,
-          duration: 800,
-          onComplete: function () { brokeTxt.destroy(); }
-        });
-      }
-      this.updateHUD();
     }
 
     // Reset attack state after animation completes
@@ -877,7 +703,7 @@ class Level3Scene extends Phaser.Scene {
       }
     });
 
-    this.time.delayedCall(1000, function () {
+    this.time.delayedCall(1200, function () {
       self.isInvulnerable = false;
       if (self.player.active) {
         self.player.setAlpha(1);
@@ -931,7 +757,7 @@ class Level3Scene extends Phaser.Scene {
           alpha: 1,
           duration: 800,
           onComplete: function () {
-            self.scene.start('LoseScene');
+            self.scene.start('GameOverScene', { score: self.score, fromScene: 'Level3Scene' });
           }
         });
       }
@@ -1022,6 +848,21 @@ class Level3Scene extends Phaser.Scene {
       data.walkTimer = 0;
       data.walkFrame = (data.walkFrame % 4) + 1;
       enemy.setTexture(data.type + '-walk-' + data.walkFrame);
+    }
+
+    // Anti-stacking: push apart from nearby enemies
+    var allEnemies = this.enemies.getChildren();
+    for (var j = 0; j < allEnemies.length; j++) {
+      var other = allEnemies[j];
+      if (other === enemy || !other.active || !other.customData || other.customData.state === 'defeated') continue;
+      var dx = enemy.x - other.x;
+      var dy = enemy.y - other.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 30 && dist > 0) {
+        var pushForce = (30 - dist) * 2;
+        enemy.body.velocity.x += (dx / dist) * pushForce;
+        enemy.body.velocity.y += (dy / dist) * pushForce;
+      }
     }
 
     // Check attack range
@@ -1134,19 +975,8 @@ class Level3Scene extends Phaser.Scene {
 
     var self = this;
 
-    // After wave 3 (index 2): notes mechanic + guitar pickup
-    if (this.currentWave === 2 && !this.powerChecked) {
-      this.time.delayedCall(1000, function () {
-        self.checkNotesMechanic();
-        self.time.delayedCall(2500, function () {
-          self.spawnWave(3);
-        });
-      });
-      return;
-    }
-
-    // After all 5 waves (index 4): victory
-    if (this.currentWave >= 4) {
+    // After final wave: victory
+    if (this.currentWave >= this.waves.length - 1) {
       this.time.delayedCall(1000, function () {
         self.playerWins();
       });
@@ -1196,7 +1026,13 @@ class Level3Scene extends Phaser.Scene {
           alpha: 1,
           duration: 1000,
           onComplete: function () {
-            self.scene.start('WinScene');
+            // Route to WinScene or LoseScene based on notes collected in Level 1
+            var notesCollected = self.registry.get('notesCollected') || 0;
+            if (notesCollected >= 10) {
+              self.scene.start('WinScene');
+            } else {
+              self.scene.start('LoseScene');
+            }
           }
         });
       }

@@ -44,7 +44,6 @@ class TutorialScene extends Phaser.Scene {
       this._buildLevel2Page1();
     } else if (this.level === 3) {
       this._buildLevel3Page1();
-      this._buildLevel3Page2();
     }
 
     this.totalPages = this.pageElements.length;
@@ -149,6 +148,7 @@ class TutorialScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(100));
 
     var itemNames = ['item-money', 'item-goldrecord', 'item-star', 'item-note'];
+    var itemLabels = ['$$$', 'Records', 'Stars', 'Notes'];
     var startX = 170;
     for (var i = 0; i < itemNames.length; i++) {
       try {
@@ -156,10 +156,19 @@ class TutorialScene extends Phaser.Scene {
         icon.setScale(1.2).setDepth(100);
         elements.push(icon);
       } catch (e) { /* silent */ }
+      elements.push(this.add.text(startX + i * 48, 102, itemLabels[i], {
+        fontSize: '7px', fontFamily: 'monospace', color: '#AAAAAA'
+      }).setOrigin(0.5).setDepth(100));
     }
 
-    elements.push(this.add.text(240, 102, '$$$ Records Stars Notes', {
-      fontSize: '7px', fontFamily: 'monospace', color: '#AAAAAA'
+    // 5th catch icon: double note
+    try {
+      var doubleNote = this.add.image(startX + 4 * 48, 85, 'item-doublenote');
+      doubleNote.setScale(1.2).setDepth(100);
+      elements.push(doubleNote);
+    } catch (e) { /* silent */ }
+    elements.push(this.add.text(startX + 4 * 48, 102, 'x3 Notes', {
+      fontSize: '7px', fontFamily: 'monospace', color: '#FFD700'
     }).setOrigin(0.5).setDepth(100));
 
     // Dodge items
@@ -171,23 +180,28 @@ class TutorialScene extends Phaser.Scene {
       fontSize: '9px', fontFamily: 'monospace', color: '#FF8888'
     }).setOrigin(0.5).setDepth(100));
 
-    // Notes hint (highlighted, blinking)
-    var notesHint = this.add.text(240, 165, 'Collect MUSICAL NOTES', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#9966FF',
-      stroke: '#000000', strokeThickness: 2
+    // Notes hint (highlighted, blinking, prominent)
+    var notesHint = this.add.text(240, 160, 'Collect MUSICAL NOTES', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#9966FF',
+      stroke: '#000000', strokeThickness: 3
     }).setOrigin(0.5).setDepth(100);
     elements.push(notesHint);
 
     this.tweens.add({
       targets: notesHint,
-      alpha: 0.4,
-      duration: 600,
+      alpha: 0.3,
+      duration: 500,
       yoyo: true,
       repeat: -1
     });
 
-    elements.push(this.add.text(240, 180, "They determine your fate later!", {
+    elements.push(this.add.text(240, 178, "They determine your fate later!", {
       fontSize: '7px', fontFamily: 'monospace', color: '#CC99FF'
+    }).setOrigin(0.5).setDepth(100));
+
+    // Golden notes multiplier hint
+    elements.push(this.add.text(240, 195, 'Golden notes = 3x!', {
+      fontSize: '8px', fontFamily: 'monospace', color: '#FFD700'
     }).setOrigin(0.5).setDepth(100));
 
     // Continue prompt (blinking)
@@ -230,21 +244,21 @@ class TutorialScene extends Phaser.Scene {
     elements.push(this.add.rectangle(240, 47, 200, 2, 0xFFD700, 0.6)
       .setDepth(100));
 
-    // Dartboard sprite
+    // Dartboard sprite (scaled down to avoid overlap)
     try {
-      var dartboard = this.add.image(240, 100, 'dartboard');
-      dartboard.setScale(1.0).setDepth(100);
+      var dartboard = this.add.image(240, 90, 'dartboard');
+      dartboard.setScale(0.6).setDepth(100);
       elements.push(dartboard);
     } catch (e) { /* silent */ }
 
     // Aim
-    elements.push(this.add.text(240, 140, 'AIM with mouse / finger', {
+    elements.push(this.add.text(240, 145, 'AIM with mouse / finger', {
       fontSize: '10px', fontFamily: 'monospace', color: '#FFFFFF'
     }).setOrigin(0.5).setDepth(100));
 
     // Crosshair icon
     try {
-      var crosshairIcon = this.add.image(240, 163, 'crosshair');
+      var crosshairIcon = this.add.image(240, 168, 'crosshair');
       crosshairIcon.setDepth(100);
       elements.push(crosshairIcon);
 
@@ -260,15 +274,30 @@ class TutorialScene extends Phaser.Scene {
     } catch (e) { /* silent */ }
 
     // Throw
-    elements.push(this.add.text(240, 185, 'CLICK / TAP to throw darts', {
+    elements.push(this.add.text(240, 190, 'CLICK / TAP to throw darts', {
       fontSize: '10px', fontFamily: 'monospace', color: '#FFFFFF'
     }).setOrigin(0.5).setDepth(100));
 
     // Bullseye hint
-    elements.push(this.add.text(240, 208, 'Hit the bullseye for max points!', {
+    elements.push(this.add.text(240, 213, 'Hit the bullseye for max points!', {
       fontSize: '9px', fontFamily: 'monospace', color: '#FF00FF',
       stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5).setDepth(100));
+
+    // Continue prompt (blinking)
+    var continueText2 = this.add.text(240, 230, 'PRESS ANY KEY TO START', {
+      fontSize: '8px', fontFamily: 'monospace', color: '#FFFFFF'
+    }).setOrigin(0.5).setDepth(100);
+
+    this.tweens.add({
+      targets: continueText2,
+      alpha: 0,
+      duration: 500,
+      yoyo: true,
+      repeat: -1
+    });
+
+    elements.push(continueText2);
 
     // Page indicator
     elements.push(this.add.text(240, 245, '1 / 1', {
@@ -302,9 +331,19 @@ class TutorialScene extends Phaser.Scene {
       elements.push(rockstarAttack);
     } catch (e) { /* silent */ }
 
-    // Movement
-    elements.push(this.add.text(240, 118, '<  >  to MOVE', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#FFFFFF'
+    // Movement — all 4 directions
+    elements.push(this.add.text(240, 90, '^', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#FFFFFF',
+      stroke: '#333333', strokeThickness: 2
+    }).setOrigin(0.5).setDepth(100));
+
+    elements.push(this.add.text(240, 103, '< v >', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#FFFFFF',
+      stroke: '#333333', strokeThickness: 2
+    }).setOrigin(0.5).setDepth(100));
+
+    elements.push(this.add.text(240, 120, 'MOVE IN ALL DIRECTIONS', {
+      fontSize: '9px', fontFamily: 'monospace', color: '#CCCCCC'
     }).setOrigin(0.5).setDepth(100));
 
     // Attack controls
@@ -314,12 +353,31 @@ class TutorialScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(100));
 
     // Build combos
-    elements.push(this.add.text(240, 162, 'Hit enemies in a row to build COMBOS!', {
+    elements.push(this.add.text(240, 158, 'Hit enemies in a row to build COMBOS!', {
       fontSize: '8px', fontFamily: 'monospace', color: '#FFCC00'
     }).setOrigin(0.5).setDepth(100));
 
+    // Notes determine fate hint (moved from old page 2)
+    var secretText = this.add.text(240, 178, 'Your collected NOTES unlock a secret power...', {
+      fontSize: '7px', fontFamily: 'monospace', color: '#9966FF',
+      stroke: '#000000', strokeThickness: 2
+    }).setOrigin(0.5).setDepth(100);
+    elements.push(secretText);
+
+    this.tweens.add({
+      targets: secretText,
+      alpha: 0.3,
+      duration: 800,
+      yoyo: true,
+      repeat: -1
+    });
+
+    elements.push(this.add.text(240, 192, 'Musical notes determine your fate!', {
+      fontSize: '7px', fontFamily: 'monospace', color: '#CC99FF'
+    }).setOrigin(0.5).setDepth(100));
+
     // Continue prompt (blinking)
-    var continueText = this.add.text(240, 210, 'PRESS ANY KEY TO CONTINUE', {
+    var continueText = this.add.text(240, 215, 'PRESS ANY KEY TO START', {
       fontSize: '8px', fontFamily: 'monospace', color: '#FFFFFF'
     }).setOrigin(0.5).setDepth(100);
 
@@ -334,85 +392,7 @@ class TutorialScene extends Phaser.Scene {
     elements.push(continueText);
 
     // Page indicator
-    elements.push(this.add.text(240, 245, '1 / 2', {
-      fontSize: '7px', fontFamily: 'monospace', color: '#666666'
-    }).setOrigin(0.5).setDepth(100));
-
-    this._hideElements(elements);
-    this.pageElements.push(elements);
-  }
-
-  _buildLevel3Page2() {
-    var elements = [];
-
-    elements.push(this.add.text(240, 30, 'LEVEL 3 - THE FIGHT', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#FFD700',
-      stroke: '#000000', strokeThickness: 3
-    }).setOrigin(0.5).setDepth(100));
-
-    elements.push(this.add.rectangle(240, 47, 200, 2, 0xFFD700, 0.6)
-      .setDepth(100));
-
-    // Guitar pickup
-    elements.push(this.add.text(240, 78, 'Pick up GUITARS for power hits!', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#FFCC00',
-      stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0.5).setDepth(100));
-
-    // Guitar icon (floating)
-    try {
-      var guitarIcon = this.add.image(240, 108, 'item-guitar');
-      guitarIcon.setScale(1.5).setDepth(100);
-      elements.push(guitarIcon);
-
-      this.tweens.add({
-        targets: guitarIcon,
-        y: 104,
-        duration: 500,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
-    } catch (e) { /* silent */ }
-
-    // Notes power
-    var secretText = this.add.text(240, 148, 'Your collected NOTES unlock a secret power...', {
-      fontSize: '7px', fontFamily: 'monospace', color: '#9966FF',
-      stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0.5).setDepth(100);
-    elements.push(secretText);
-
-    this.tweens.add({
-      targets: secretText,
-      alpha: 0.3,
-      duration: 800,
-      yoyo: true,
-      repeat: -1
-    });
-
-    elements.push(this.add.text(240, 164, 'Musical notes determine your fate!', {
-      fontSize: '7px', fontFamily: 'monospace', color: '#CC99FF'
-    }).setOrigin(0.5).setDepth(100));
-
-    // PRESS START (big and blinking)
-    var pressStart = this.add.text(240, 200, 'PRESS START', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#FFFFFF',
-      stroke: '#000000', strokeThickness: 3,
-      shadow: { offsetX: 1, offsetY: 1, color: '#555555', blur: 0, fill: true }
-    }).setOrigin(0.5).setDepth(100);
-
-    this.tweens.add({
-      targets: pressStart,
-      alpha: 0,
-      duration: 500,
-      yoyo: true,
-      repeat: -1
-    });
-
-    elements.push(pressStart);
-
-    // Page indicator
-    elements.push(this.add.text(240, 245, '2 / 2', {
+    elements.push(this.add.text(240, 245, '1 / 1', {
       fontSize: '7px', fontFamily: 'monospace', color: '#666666'
     }).setOrigin(0.5).setDepth(100));
 
